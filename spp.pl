@@ -350,7 +350,10 @@ sub gen_top_line
 	if ( defined $midGen ) {
 		@middle = ( gen_prompt_section( $midGen ) );
 		if ( @middle ) {
-			@lm = gen_transition( $THEME{middle_prefix} , $mc , $mc );
+			@lm = (
+				gen_transition( $THEME{middle_prefix} , $mc , $mc ) ,
+				{ bg => $THEME{bg_middle} } ,
+			);
 			@mr = gen_transition( $THEME{middle_suffix} , $mc , $mc );
 			foreach my $entry ( @middle ) {
 				delete $entry->{bg};
