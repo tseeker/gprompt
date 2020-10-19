@@ -10,6 +10,9 @@ use POSIX qw(strftime);
 
 our %CONFIG = (
 	# LAYOUT
+	# - Theme and local overrides
+	layout_theme => 'powerline_yb' ,
+	layout_theme_overrides => {} ,
 	# - Section generators for the left side of the top bar
 	layout_left => [
 		'datetime' ,
@@ -73,7 +76,14 @@ our %CONFIG = (
 	load_min => 0 ,
 );
 
-our %THEME = (
+
+#-------------------------------------------------------------------------------
+# THEMES
+
+our %THEMES = ();
+
+# Powerline based, using yellow and blue
+$THEMES{powerline_yb} = {
 	# Padding character
 	padding => ' ' ,
 	# Left side of top line
@@ -150,8 +160,8 @@ our %THEME = (
 	load_med_bg => 135 ,
 	# Load average - High load colors
 	load_high_fg => 231 ,
-	load_high_bg => 130
-);
+	load_high_bg => 130 ,
+};
 
 #-------------------------------------------------------------------------------
 # MAIN PROGRAM
@@ -173,6 +183,19 @@ sub set_color
 {
 	my ( $type , $index ) = @_;
 	return tput_sequence( "seta$type $index" );
+}
+
+our $THEME = undef;
+sub themed($)
+{
+	my $k = shift;
+	unless ( defined $THEME ) {
+		$THEME = {
+			%{ $THEMES{ $CONFIG{layout_theme} } } ,
+			%{ $CONFIG{layout_theme_overrides} } ,
+		};
+	}
+	return $THEME->{ $k };
 }
 
 sub get_section_length
@@ -199,7 +222,7 @@ sub get_length
 sub gen_transition
 {
 	my $transition = shift;
-	my @colors = ( @_ , @{ $THEME{transition} } );
+	my @colors = ( @_ , @{ themed 'transition' } );
 	my $state = 0;
 	my $pc;
 	my $out = [ ];
@@ -232,7 +255,7 @@ sub compute_trans_lengths
 		foreach my $type ( qw( prefix separator suffix ) ) {
 			my $k = $side . '_' . $type;
 			$out{ $k } = get_section_length( gen_transition(
-					$THEME{ $k } , 1 , 2 ) );
+					themed $k , 1 , 2 ) );
 		}
 	}
 	return %out;
@@ -282,9 +305,9 @@ sub add_transitions
 	my $cBefore = shift;
 	my $cAfter = shift;
 
-	my $prefix = $THEME{$name . '_prefix'};
-	my $separator = $THEME{$name . '_separator'};
-	my $suffix = $THEME{$name . '_suffix'};
+	my $prefix = themed( $name . '_prefix' );
+	my $separator = themed( $name . '_separator' );
+	my $suffix = themed( $name . '_suffix' );
 
 	my $prevBg = undef;
 	my $curBg = $cBefore;
@@ -310,7 +333,7 @@ sub render
 	my $out = '';
 	my $mustSetFg = undef;
 	my $mustSetBg = undef;
-	my $cDefault = $THEME{'bg_' . $name};
+	my $cDefault = themed( 'bg_' . $name );
 	foreach my $section ( @_ ) {
 		$mustSetBg = $section->{bg} if exists $section->{bg};
 		foreach my $part ( @{ $section->{content} } ) {
@@ -345,16 +368,16 @@ sub gen_top_line
 
 	# Generate content
 	my ( @lm , @middle , @mr ) = ( );
-	my $mc = $THEME{bg_middle};
+	my $mc = themed 'bg_middle';
 	@left = gen_prompt_sections( @left );
 	if ( defined $midGen ) {
 		@middle = ( gen_prompt_section( $midGen ) );
 		if ( @middle ) {
 			@lm = (
-				gen_transition( $THEME{middle_prefix} , $mc , $mc ) ,
-				{ bg => $THEME{bg_middle} } ,
+				gen_transition( themed('middle_prefix') , $mc , $mc ) ,
+				{ bg => themed('bg_middle') } ,
 			);
-			@mr = gen_transition( $THEME{middle_suffix} , $mc , $mc );
+			@mr = gen_transition( themed('middle_suffix') , $mc , $mc );
 			foreach my $entry ( @middle ) {
 				delete $entry->{bg};
 			}
@@ -371,7 +394,7 @@ sub gen_top_line
 	my @mpad = ();
 	if ( $len < $COLUMNS ) {
 		push @mpad , {
-			content => [ $THEME{padding} x ( $COLUMNS - $len ) ]
+			content => [ themed('padding') x ( $COLUMNS - $len ) ]
 		};
 	}
 
@@ -397,11 +420,11 @@ sub gen_input_line
 sub gen_ps2
 {
 	my $ill = shift;
-	my @line = gen_transition( $THEME{ps2_suffix} , $THEME{bg_ps2} , 0 );
+	my @line = gen_transition( themed('ps2_suffix') , themed('bg_ps2') , 0 );
 	my $len = get_length( @line );
 	if ( $len < $ill ) {
 		unshift @line , {
-			bg => $THEME{bg_ps2} ,
+			bg => themed('bg_ps2') ,
 			content => [ ' ' x ( $ill - $len ) ]
 		};
 	}
@@ -423,15 +446,15 @@ sub render_datetime
 	my @cur_time = localtime time;
 	my @out = ( );
 	if ( $CONFIG{dt_show_date} ) {
-		push @out , {fg=>$THEME{dt_date_fg}};
+		push @out , {fg=>themed 'dt_date_fg'};
 		push @out , ( strftime $CONFIG{dt_date_fmt}, @cur_time )
 	}
 	if ( $CONFIG{dt_show_time} ) {
 		push @out, ' ' if @out;
-		push @out , {fg=>$THEME{dt_time_fg}};
+		push @out , {fg=>themed 'dt_time_fg'};
 		push @out , ( strftime $CONFIG{dt_time_fmt}, @cur_time )
 	}
-	return { bg => $THEME{dt_bg} , content => [@out] };
+	return { bg => themed 'dt_bg' , content => [@out] };
 }
 
 sub render_cwd
@@ -447,12 +470,13 @@ sub render_cwd
 	my $offset = length( $dir ) - $max_len;
 	if ( $offset > 0 ) {
 		$dir = substr $dir , $offset , $max_len;
-		$dir =~ s!^[^/]*/!$THEME{cwd_trunc}/!;
+		my $t = themed 'cwd_trunc';
+		$dir =~ s!^[^/]*/!$t/!;
 	}
 
 	return {
-		bg => $THEME{cwd_bg_color} ,
-		content => [ {fg=>$THEME{cwd_fg_color}} , $dir ]
+		bg => themed 'cwd_bg_color' ,
+		content => [ {fg=>themed 'cwd_fg_color'} , $dir ]
 	};
 }
 
@@ -483,14 +507,14 @@ sub render_userhost
 		$str .= hostname;
 	}
 	if ( $rm && $is_remote ) {
-		$str .= $THEME{uh_remote_symbol};
+		$str .= themed 'uh_remote_symbol';
 	}
 	return () unless $str;
 
 	return {
-		bg => $THEME{ ( $> == 0 ) ? 'uh_root_bg' : 'uh_user_bg' } ,
+		bg => themed( ( $> == 0 ) ? 'uh_root_bg' : 'uh_user_bg' ) ,
 		content => [
-			{ fg => $THEME{ ( $> == 0 ) ? 'uh_root_fg' : 'uh_user_fg' } } ,
+			{ fg => themed( ( $> == 0 ) ? 'uh_root_fg' : 'uh_user_fg' ) } ,
 			$str
 		] ,
 	};
@@ -505,20 +529,19 @@ sub render_prevcmd
 	$sc = ( $sc == 1 || ( $sc == 2 && $status ) );
 	return () unless $sc || $ss;
 
-	my $col = ( $status == 0 ) ? $THEME{pcmd_ok_fg} : $THEME{pcmd_err_fg};
+	my $col = themed( ( $status == 0 ) ? 'pcmd_ok_fg' : 'pcmd_err_fg' );
 	my @out = ();
 	if ( $ss ) {
 		push @out , { fg => ( $cl & 1 != 0 ) ? $col : -1 };
-		push @out , ( ( $status == 0 )
-						? $THEME{pcmd_ok_sym}
-						: $THEME{pcmd_err_sym} );
+		push @out , themed( ( $status == 0 ) ? 'pcmd_ok_sym' : 'pcmd_err_sym' );
 	}
 	if ( $sc ) {
 		push @out , ' ' if @out;
 		push @out , { fg => ( $cl & 2 != 0 ) ? $col : -1 };
 		if ( $pc ) {
 			my $str = sprintf '%' . ( $pc * 3 ) . 's' , $status;
-			$str =~ s/ /$THEME{padding}/g;
+			my $pad = themed 'padding';
+			$str =~ s/ /$pad/g;
 			push @out , $str;
 		} else {
 			push @out , $status;
@@ -526,7 +549,7 @@ sub render_prevcmd
 	}
 
 	return {
-		bg => ( $status == 0 ) ? $THEME{pcmd_ok_bg} : $THEME{pcmd_err_bg} ,
+		bg => themed( ( $status == 0 ) ? 'pcmd_ok_bg' : 'pcmd_err_bg' ) ,
 		content => [ @out ] ,
 	};
 }
@@ -560,9 +583,9 @@ sub render_load
 		$cat = 'high';
 	}
 
-	$load = $THEME{load_title} . $load . '%';
+	$load = (themed 'load_title') . $load . '%';
 	return {
-		bg => $THEME{ 'load_' . $cat . '_bg' } ,
-		content => [ {fg=>$THEME{ 'load_' . $cat . '_fg' }}, $load ]
+		bg => themed( 'load_' . $cat . '_bg' ) ,
+		content => [ {fg=>themed( 'load_' . $cat . '_fg' )}, $load ]
 	};
 }
