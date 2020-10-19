@@ -1,5 +1,6 @@
 #!/usr/bin/perl
-# Shiny perl prompt, lol
+# SHINY PERL PROMPT, lol
+# Use with : export PROMPT_COMMAND='eval "$(perl path/to/spp.pl $?)"'
 
 use strict;
 use warnings;
@@ -490,7 +491,7 @@ sub render_prevcmd
 	my ( $ss , $sc , $pc , $cl ) = map {
 			$CONFIG{ "pcmd_$_" }
 		} qw( show_symbol show_code pad_code colors );
-	my $status = $ARGV[0];
+	my $status = scalar(@ARGV) ? $ARGV[0] : 255;
 	$sc = ( $sc == 1 || ( $sc == 2 && $status ) );
 	return () unless $sc || $ss;
 
