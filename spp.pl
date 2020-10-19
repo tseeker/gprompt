@@ -87,9 +87,9 @@ our %THEME = (
 	# Input line
 	input_prefix => '\b1 ' ,
 	input_separator => '\f0\b2\f2\b1' ,
-	input_suffix => ' \f0\b2\f2\b1' ,
+	input_suffix => '\f0\b2\f2\b1 ' ,
 	# Secondary prompt suffix
-	ps2_suffix => '\f0\b1 ' ,
+	ps2_suffix => '\f0\b2\f2\b1 ' ,
 
 	# Extra colors for transition strings
 	transition => [ 233 ] ,
@@ -322,6 +322,8 @@ sub render
 					$mustSetFg = $cDefault if $mustSetFg < 0;
 					$out .= set_color( 'f' , $mustSetFg );
 				}
+				$part =~ s/\\/\\\\/g;
+				$part =~ s/"/\\\"/g;
 				$out .= $part;
 				$mustSetBg = $mustSetFg = undef;
 			}
@@ -376,12 +378,31 @@ sub gen_input_line
 	my $len = 0;
 	my @input = adapt_to_width( \$len , 'input' , gen_prompt_sections( @INPUT ) );
 	push @input , {content=>['']} unless @input;
-	return render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) );
+	return ( $len ,
+		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) )
+	);
 }
 
-my $ps1 = gen_top_line . gen_input_line;
+sub gen_ps2
+{
+	my $ill = shift;
+	my @line = gen_transition( $THEME{ps2_suffix} , $THEME{bg_ps2} , 0 );
+	my $len = get_length( @line );
+	if ( $len < $ill ) {
+		unshift @line , {
+			bg => $THEME{bg_ps2} ,
+			content => [ ' ' x ( $ill - $len ) ]
+		};
+	}
+	return render( 'ps2' , @line ) . tput_sequence( 'sgr0' );
+}
+
+my $ps1 = gen_top_line;
+my ( $ill , $ilt ) = gen_input_line;
+$ps1 .= $ilt;
 $ps1 .= tput_sequence( 'sgr0' ) if $ps1;
-print "$ps1\n";
+my $ps2 = gen_ps2( $ill );
+print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
 
 #-------------------------------------------------------------------------------
 # SECTION RENDERERS
