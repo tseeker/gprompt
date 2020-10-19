@@ -8,28 +8,31 @@ use utf8;
 use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime);
 
-our @LEFT = (
-	'datetime' ,
-	'userhost' ,
-#	'load' ,
-#	'prevcmd' ,
-);
-our $MIDDLE = 'cwd';
-our @RIGHT = (
-#	'datetime' ,
-#	'userhost' ,
-	'load' ,
-#	'prevcmd' ,
-);
-our @INPUT = (
-#	'datetime' ,
-#	'userhost' ,
-#	'load' ,
-	'prevcmd' ,
-);
-
 our %CONFIG = (
 	# LAYOUT
+	# - Section generators for the left side of the top bar
+	layout_left => [
+		'datetime' ,
+		'userhost' ,
+		#'load' ,
+		#'prevcmd' ,
+	] ,
+	# - Section generator for the central part of the top bar (undef if unused)
+	layout_middle => 'cwd' ,
+	# - Section generators for the right side of the top bar
+	layout_right => [
+		#'datetime' ,
+		#'userhost' ,
+		'load' ,
+		#'prevcmd' ,
+	] ,
+	# - Section generators for the input bar
+	layout_input => [
+		#'datetime' ,
+		#'userhost' ,
+		#'load' ,
+		'prevcmd' ,
+	] ,
 	# - Always generate input line ?
 	layout_input_always => 0 ,
 
@@ -335,14 +338,17 @@ sub render
 
 sub gen_top_line
 {
-	return "" unless ( @LEFT || @RIGHT || defined( $MIDDLE ) );
+	my @left = @{ $CONFIG{layout_left} };
+	my @right = @{ $CONFIG{layout_right} };
+	my $midGen = $CONFIG{layout_middle};
+	return "" unless ( @left || @right || defined( $midGen ) );
 
 	# Generate content
-	my ( @left , @lm , @middle , @mr , @right ) = ( );
+	my ( @lm , @middle , @mr ) = ( );
 	my $mc = $THEME{bg_middle};
-	@left = gen_prompt_sections( @LEFT );
-	if ( defined $MIDDLE ) {
-		@middle = ( gen_prompt_section( $MIDDLE ) );
+	@left = gen_prompt_sections( @left );
+	if ( defined $midGen ) {
+		@middle = ( gen_prompt_section( $midGen ) );
 		if ( @middle ) {
 			@lm = gen_transition( $THEME{middle_prefix} , $mc , $mc );
 			@mr = gen_transition( $THEME{middle_suffix} , $mc , $mc );
@@ -351,7 +357,7 @@ sub gen_top_line
 			}
 		}
 	}
-	@right = gen_prompt_sections( reverse @RIGHT );
+	@right = gen_prompt_sections( reverse @right );
 
 	# Adapt to width
 	my $len = get_length( ( @lm , @middle , @mr ) );
@@ -375,9 +381,10 @@ sub gen_top_line
 
 sub gen_input_line
 {
-	return "" unless @INPUT || $CONFIG{layout_input_always};
+	my @input = @{ $CONFIG{layout_input} };
+	return "" unless @input || $CONFIG{layout_input_always};
 	my $len = 0;
-	my @input = adapt_to_width( \$len , 'input' , gen_prompt_sections( @INPUT ) );
+	@input = adapt_to_width( \$len , 'input' , gen_prompt_sections( @input ) );
 	push @input , {content=>['']} unless @input;
 	return ( $len ,
 		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) )
