@@ -8,10 +8,11 @@ use utf8;
 use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime);
 
+
 our %CONFIG = (
 	# LAYOUT
 	# - Theme and local overrides
-	layout_theme => 'powerline_yb' ,
+	layout_theme => 'ascii_yb' ,
 	layout_theme_overrides => {} ,
 	# - Section generators for the left side of the top bar
 	layout_left => [
@@ -47,7 +48,7 @@ our %CONFIG = (
 
 	# CURRENT WORKING DIRECTORY
 	# - Max width as a percentage of the terminal's width
-	cwd_max_width => 35 ,
+	cwd_max_width => 50 ,
 
 	# USER@HOST
 	# - Display username? 0=no, 1=yes
@@ -98,143 +99,287 @@ our %CONFIG = (
 #===============================================================================
 # THEMES
 
-our %THEMES = ();
-
 sub thref { bless {(@_==2)?(t=>$_[0],r=>$_[1]):(r=>$_[0])}, 'ThemeRef'; }
 
-# Powerline based, using yellow and blue
-$THEMES{powerline_yb} = {
-	# Padding character
-	padding => ' ' ,
-	# Left side of top line
-	left_prefix => '\b1 ' ,
-	left_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
-	left_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
-	# Middle of top line
-	middle_prefix => '' ,
-	middle_separator => ' | ' ,
-	middle_suffix => '' ,
-	# Right side of top line
-	right_prefix => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}".'\b1' ,
-	right_separator => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}" ,
-	right_suffix => '\b0 ' ,
-	# Input line
-	input_prefix => '\b1 ' ,
-	input_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
-	input_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
-	# Secondary prompt suffix
-	ps2_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
+sub init_themes
+{
+	my %t = ();
 
-	# Color gradient to use
-	bg0 => 21 , bg1 => 61 , bg2 => 143 , bg3 => 226 ,
-	fg3 => 18 , fg2 => 21 , fg1 => 184 , fg0 => 226 ,
-	# Default foreground color
-	fg => 15 ,
+	# Elements that are common between most themes
+	my %common = (
+		# Default left side colors
+		fg_left => thref( 'fg' ) ,
+		# Default middle colors
+		fg_middle => thref( 'fg' ) ,
+		# Default right side colors
+		bg_right => thref( 'bg_left' ) ,
+		fg_right => thref( 'fg' ) ,
+		# Default input prompt colors
+		fg_input => thref( 'fg' ) ,
 
-	# Extra colors for transition strings
-	transition => [ 233 ] ,
-	# Default left side colors
-	bg_left => 239 ,
-	fg_left => thref( 'fg' ) ,
-	# Default middle colors
-	bg_middle => 235 ,
-	fg_middle => thref( 'fg' ) ,
-	# Default right side background color
-	bg_right => thref( 'bg_left' ) ,
-	fg_right => thref( 'fg' ) ,
-	# Default input prompt background color
-	bg_input => 238 ,
-	fg_input => thref( 'fg' ) ,
-	# Secondary prompt backaground
-	bg_ps2 => 234 ,
+		# Current working directory - Truncation string
+		cwd_trunc => '…' ,
+		# Current working directory - Foreground / background colors
+		cwd_fg_color => -1 ,
+		cwd_bg_color => -1 ,
 
-	# Current working directory - Truncation string
-	cwd_trunc => '…' ,
-	# Current working directory - Foreground / background colors
-	cwd_fg_color => -1 ,
-	cwd_bg_color => -1 ,
+		# User@host - Remote host symbol
+		uh_remote_symbol => '↥' ,
+		# User@host - User - Foreground and background colors
+		uh_user_fg => thref( 'fg0' ) ,
+		uh_user_bg => thref( 'bg0' ) ,
+		# User@host - Root - Foreground and background colors
+		uh_root_fg => thref( 'fg3' ) ,
+		uh_root_bg => thref( 'bg3' ) ,
 
-	# User@host - Remote host symbol
-	uh_remote_symbol => '↥' ,
-	# User@host - User - Foreground and background colors
-	uh_user_fg => thref( 'fg0' ) ,
-	uh_user_bg => thref( 'bg0' ) ,
-	# User@host - Root - Foreground and background colors
-	uh_root_fg => thref( 'fg3' ) ,
-	uh_root_bg => thref( 'bg3' ) ,
+		# Date/time - Colors
+		dt_time_fg => -1 ,
+		dt_date_fg => -1 ,
+		dt_bg => -1 ,
 
-	# Date/time - Colors
-	dt_time_fg => -1 ,
-	dt_date_fg => -1 ,
-	dt_bg => -1 ,
+		# Previous command state - Symbols
+		pcmd_ok_sym => '✓' ,
+		pcmd_err_sym => '✗' ,
+		# Previous command state - OK text / background color
+		pcmd_ok_bg => -1 ,
+		# Previous command state - Error text / background color
+		pcmd_err_bg => -1 ,
+		# Previous command state - Other text foreground
+		pcmd_text_fg => -1 ,
 
-	# Previous command state - Symbols
-	pcmd_ok_sym => '✓' ,
-	pcmd_err_sym => '✗' ,
-	# Previous command state - OK text / background color
-	pcmd_ok_fg => thref( 'fg3' ) ,
-	pcmd_ok_bg => -1 ,
-	# Previous command state - Error text / background color
-	pcmd_err_fg => thref( 'fg0' ) ,
-	pcmd_err_bg => -1 ,
-	# Previous command state - Other text foreground
-	pcmd_text_fg => -1 ,
+		# Load average - Symbol or text
+		load_title => '↟' ,
+		# Load average - Low load colors
+		load_low_fg => -1 ,
+		load_low_bg => -1 ,
+		# Load average - Medium load colors
+		load_med_fg => thref( 'fg2' ) ,
+		load_med_bg => thref( 'bg2' ) ,
+		# Load average - High load colors
+		load_high_fg => thref( 'fg3' ) ,
+		load_high_bg => thref( 'bg3' ) ,
 
-	# Load average - Symbol or text
-	load_title => '↟' ,
-	# Load average - Low load colors
-	load_low_fg => -1 ,
-	load_low_bg => -1 ,
-	# Load average - Medium load colors
-	load_med_fg => thref( 'fg1' ) ,
-	load_med_bg => thref( 'bg1' ) ,
-	# Load average - High load colors
-	load_high_fg => thref( 'fg3' ) ,
-	load_high_bg => thref( 'bg3' ) ,
+		# Git - Branch symbol
+		git_branch_symbol => "\x{e0a0} " ,
+		# Git - Branch colors - No warning
+		git_branch_ok_bg => thref( 'bg0' ) ,
+		git_branch_ok_fg => thref( 'fg0' ) ,
+		# Git - Branch colors - Weak warning
+		git_branch_warn_bg => thref( 'bg2' ) ,
+		git_branch_warn_fg => thref( 'fg2' ) ,
+		# Git - Branch colors - Strong warning
+		git_branch_danger_bg => thref( 'bg3' ) ,
+		git_branch_danger_fg => 0 ,
+		# Git - Repo state colors
+		git_repstate_bg => thref( 'bg1' ) ,
+		git_repstate_fg => thref( 'fg1' ) ,
+		# Git - Padding character for status sections
+		git_status_pad => '' ,
+		# Git - Untracked symbol and colors
+		git_untracked_symbol => '❄' ,
+		git_untracked_bg => thref( 'bg3' ) ,
+		git_untracked_normal_fg => thref( 'fg3' ) ,
+		git_untracked_add_fg => thref( 'fg3' ) ,
+		git_untracked_mod_fg => thref( 'fg3' ) ,
+		git_untracked_del_fg => thref( 'fg3' ) ,
+		# Git - Indexed symbol and colors
+		git_indexed_symbol => '☰' ,
+		git_indexed_bg => thref( 'bg2' ) ,
+		git_indexed_normal_fg => thref( 'fg2' ) ,
+		git_indexed_add_fg => thref( 'fg2' ) ,
+		git_indexed_mod_fg => thref( 'fg2' ) ,
+		git_indexed_del_fg => thref( 'fg2' ) ,
+		# Git - Add/modify/delete symbols
+		git_add_symbol => '+' ,
+		git_mod_symbol => '±' ,
+		git_del_symbol => '∅' ,
+		# Git stash symbol and color
+		git_stash_symbol => '‡' ,
+		git_stash_bg => thref( 'bg1' ) ,
+		git_stash_fg => thref( 'fg1' ) ,
 
-	# Git - Branch symbol
-	git_branch_symbol => "\x{e0a0} " ,
-	# Git - Branch colors - No warning
-	git_branch_ok_bg => thref( 'bg0' ) ,
-	git_branch_ok_fg => thref( 'fg0' ) ,
-	# Git - Branch colors - Weak warning
-	git_branch_warn_bg => thref( 'bg2' ) ,
-	git_branch_warn_fg => thref( 'fg2' ) ,
-	# Git - Branch colors - Strong warning
-	git_branch_danger_bg => thref( 'bg3' ) ,
-	git_branch_danger_fg => 0 ,
-	# Git - Repo state colors
-	git_repstate_bg => thref( 'bg1' ) ,
-	git_repstate_fg => thref( 'fg1' ) ,
-	# Git - Padding character for status sections
-	git_status_pad => '' ,
-	# Git - Untracked symbol and colors
-	git_untracked_symbol => '❄' ,
-	git_untracked_bg => thref( 'bg3' ) ,
-	git_untracked_normal_fg => thref( 'fg3' ) ,
-	git_untracked_add_fg => thref( 'fg3' ) ,
-	git_untracked_mod_fg => thref( 'fg3' ) ,
-	git_untracked_del_fg => thref( 'fg3' ) ,
-	# Git - Indexed symbol and colors
-	git_indexed_symbol => '☰' ,
-	git_indexed_bg => thref( 'bg2' ) ,
-	git_indexed_normal_fg => thref( 'fg2' ) ,
-	git_indexed_add_fg => thref( 'fg2' ) ,
-	git_indexed_mod_fg => thref( 'fg2' ) ,
-	git_indexed_del_fg => thref( 'fg2' ) ,
-	# Git - Add/modify/delete symbols
-	git_add_symbol => '+' ,
-	git_mod_symbol => '±' ,
-	git_del_symbol => '∅' ,
-	# Git stash symbol and color
-	git_stash_symbol => '‡' ,
-	git_stash_bg => thref( 'bg1' ) ,
-	git_stash_fg => thref( 'fg1' ) ,
+		# Python virtual environment section colors
+		pyenv_bg => -1 ,
+		pyenv_fg => -1 ,
+	);
 
-	# Python virtual environment section colors
-	pyenv_bg => -1 ,
-	pyenv_fg => -1 ,
-};
+	# Base configuration for the Powerline-based themes below
+	my %powerline = ( %common ,
+		# Padding character
+		padding => ' ' ,
+		# Left side of top line
+		left_prefix => '\b1 ' ,
+		left_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
+		left_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
+		# Middle of top line
+		middle_prefix => '' ,
+		middle_separator => ' | ' ,
+		middle_suffix => '' ,
+		# Right side of top line
+		right_prefix => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}".'\b1' ,
+		right_separator => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}" ,
+		right_suffix => '\b0 ' ,
+		# Input line
+		input_prefix => '\b1 ' ,
+		input_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
+		input_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
+		# Secondary prompt suffix
+		ps2_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
+
+		# Extra colors for transition strings
+		transition => [ 233 ] ,
+		# Default left side colors
+		bg_left => 239 ,
+		# Default middle colors
+		bg_middle => 235 ,
+		# Default input prompt color
+		bg_input => 238 ,
+		# Secondary prompt backaground
+		bg_ps2 => 234 ,
+
+		# Previous command state - OK text / background color
+		pcmd_ok_fg => thref( 'fg3' ) ,
+		# Previous command state - Error text / background color
+		pcmd_err_fg => thref( 'fg0' ) ,
+	);
+	# Powerline-based, using yellow and blue
+	$t{powerline_yb} = {
+		%powerline ,
+		# Color gradient to use
+		bg0 => 21 , bg1 => 61 , bg2 => 143 , bg3 => 226 ,
+		fg3 => 18 , fg2 => 21 , fg1 => 184 , fg0 => 226 ,
+		# Default foreground color
+		fg => 15 ,
+	};
+	# Powerline-based, using green/yellow/red
+	$t{powerline_gyr} = {
+		%powerline ,
+		bg0 => 2 , bg1 => 10 , bg2 => 11 , bg3 => 9 ,
+		fg3 => 0 , fg2 => 0 , fg1 => 0 , fg0 => 0 ,
+		fg => 15 ,
+		pcmd_ok_fg => 10 , pcmd_ok_bg => -1 ,
+		pcmd_err_fg => 0 , pcmd_err_bg => 9 ,
+	};
+
+	# Base configuration for the unicode box-based themes below
+	my %blocks = ( %common ,
+		# Padding character
+		padding => '─' ,
+		# Left side of top line
+		left_prefix => '\b2\f3╭┄ ' ,
+		left_separator => '\b2\f3 ┈ ' ,
+		left_suffix => '\b2\f3 ┄╢' ,
+		# Middle of top line
+		middle_prefix => ' ' ,
+		middle_separator => ' | ' ,
+		middle_suffix => ' ' ,
+		# Right side of top line
+		right_prefix => '\b2\f3╫┄ ' ,
+		right_separator => '\b2\f3 ┈ ' ,
+		right_suffix => '\b2\f3 ┄(' ,
+		# Input line
+		input_prefix => '\b2\f3╰┄' ,
+		input_separator => '\b2\f3┈' ,
+		input_suffix => '\b2\f3─> ' ,
+		# Secondary prompt suffix
+		ps2_suffix => '\b2\f3┊ ' ,
+
+		# Foreground
+		fg => 7 ,
+
+		# Extra colors for transition strings
+		transition => [ 0 , 7 ] ,
+		# Default left side colors
+		bg_left => 0 ,
+		fg_left => thref( 'fg' ) ,
+		# Default middle colors
+		bg_middle => 0 ,
+		fg_middle => 15 ,
+		# Default right side background color
+		bg_right => 0 ,
+		fg_right => thref( 'fg' ) ,
+		# Default input prompt background color
+		bg_input => 0 ,
+		fg_input => thref( 'fg' ) ,
+		# Secondary prompt backaground
+		bg_ps2 => 0 ,
+
+		# Previous command state - OK text / background color
+		pcmd_ok_fg => thref( 'fg0' ) ,
+		# Previous command state - Error text / background color
+		pcmd_err_fg => thref( 'fg3' ) ,
+	);
+	# Block-based, using green/yellow/red
+	$t{blocks_gyr} = {
+		%blocks ,
+		bg0 => -1 , bg1 => -1 , bg2 => -1 , bg3 => -1 ,
+		fg0 => 2 , fg1 => 10 , fg2 => 11 , fg3 => 9 ,
+		transition => [ 0 , 230 ] ,
+		fg_middle => 230 ,
+	};
+	# Block-based, using yellow/blue
+	$t{blocks_yb} = {
+		%blocks ,
+		bg0 => -1 , bg1 => -1 , bg2 => -1 , bg3 => -1 ,
+		fg0 => 69 , fg1 => 117 , fg2 => 178 , fg3 => 226 ,
+		transition => [ 0 , 189 ] ,
+		fg_middle => 189 ,
+	};
+
+	# ASCII theme, based on the blocks theme
+	my %ascii = (
+		# Padding character
+		padding => '-' ,
+		# Left side of top line
+		left_prefix => '\b2\f3[' ,
+		left_separator => '\b2\f3][' ,
+		left_suffix => '\b2\f3]' ,
+		# Middle of top line
+		middle_prefix => ' ' ,
+		middle_separator => ' | ' ,
+		middle_suffix => ' ' ,
+		# Right side of top line
+		right_prefix => '\b2\f3(' ,
+		right_separator => '\b2\f3|' ,
+		right_suffix => '\b2\f3)' ,
+		# Input line
+		input_prefix => '\b2\f3[' ,
+		input_separator => '\b2\f3][' ,
+		input_suffix => '\b2\f3]> ' ,
+		# Secondary prompt suffix
+		ps2_suffix => '\b2\f3| ' ,
+
+		# Current working directory - Truncation string
+		cwd_trunc => '...' ,
+		# User@host - Remote host symbol
+		uh_remote_symbol => '(r)' ,
+		# Previous command state - Symbols
+		pcmd_ok_sym => ':-)' ,
+		pcmd_err_sym => ':-(' ,
+
+		# Load average - Symbol or text
+		load_title => 'ld ' ,
+
+		# Git - Branch symbol
+		git_branch_symbol => "B " ,
+		# Git - Untracked symbol and colors
+		git_untracked_symbol => 'U ' ,
+		# Git - Indexed symbol and colors
+		git_indexed_symbol => 'I ' ,
+		# Git - Add/modify/delete symbols
+		git_add_symbol => '+' ,
+		git_mod_symbol => '~' ,
+		git_del_symbol => '-' ,
+		# Git stash symbol and color
+		git_stash_symbol => 'S ' ,
+	);
+	$t{ascii_gyr} = { %{ $t{blocks_gyr} } , %ascii };
+	$t{ascii_yb} = { %{ $t{blocks_yb} } , %ascii };
+
+	return %t;
+}
+
+our %THEMES = init_themes;
 
 #===============================================================================
 # MAIN PROGRAM
@@ -642,7 +787,7 @@ sub render_prevcmd
 	my @out = ();
 	if ( $ss ) {
 		push @out , { fg => ( ( $cl & 1 ) != 0 ) ? $col : -1 };
-		push @out , themed( ( $status == 0 ) ? 'pcmd_ok_sym' : 'pcmd_err_sym' );
+		push @out , themed( $status == 0 ? 'pcmd_ok_sym' : 'pcmd_err_sym' );
 	}
 	if ( $sc ) {
 		push @out , ' ' if @out;
