@@ -124,7 +124,7 @@ $THEMES{powerline_yb} = {
 
 	# Color gradient to use
 	bg0 => 21 , bg1 => 61 , bg2 => 143 , bg3 => 226 ,
-	fg3 => 21 , fg2 => 26 , fg1 => 184 , fg0 => 226 ,
+	fg3 => 18 , fg2 => 21 , fg1 => 184 , fg0 => 226 ,
 	# Default foreground color
 	fg => 15 ,
 
@@ -203,6 +203,8 @@ $THEMES{powerline_yb} = {
 	# Git - Repo state colors
 	git_repstate_bg => thref( 'bg1' ) ,
 	git_repstate_fg => thref( 'fg1' ) ,
+	# Git - Padding character for status sections
+	git_status_pad => '' ,
 	# Git - Untracked symbol and colors
 	git_untracked_symbol => '❄' ,
 	git_untracked_bg => thref( 'bg3' ) ,
@@ -786,6 +788,7 @@ sub _render_git_status
 	my @sec_names = ( 'untracked' , 'indexed' );
 	my @sec_parts = ( 'normal' , 'add' , 'mod' , 'del' );
 	my @part_syms = map { themed( 'git_' . $_ . '_symbol' ) } @sec_parts[1..3];
+	my $pad = themed( 'git_status_pad' );
 	my @out = ();
 	foreach my $sidx ( 0..1 ) {
 		my $pidx0 = $sidx * 3;
@@ -802,7 +805,7 @@ sub _render_git_status
 			next unless $counters[ $pidx0 + $i ];
 			@subsecs = ( @subsecs ,
 				{fg=>$fg[ $i + 1 ]} ,
-				' ' . $part_syms[ $i ] ,
+				$pad . $part_syms[ $i ] ,
 				{fg=>$fg[ 0 ]} ,
 				$counters[ $pidx0 + $i ]
 			);
