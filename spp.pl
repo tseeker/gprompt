@@ -821,7 +821,7 @@ sub render_userhost
 
 	my $str = '';
 	if ( $un ) {
-		$str .= getlogin || getpwuid( $< ) || '(?)';
+		$str .= getpwuid( $< ) || '(?)';
 	}
 	if ( $hn == 1 || ( $hn == 2 && $is_remote ) ) {
 		$str .= '@' if $str;
