@@ -10,6 +10,9 @@ use POSIX qw(strftime);
 
 
 our %CONFIG = (
+	# Allow overrides from environment
+	allow_env_overrides => 0 ,
+
 	# LAYOUT
 	# - Theme and local overrides
 	layout_theme => 'ascii_yb' ,
@@ -492,7 +495,7 @@ sub compute_trans_lengths
 	}
 	return %out;
 }
-our %TLEN = compute_trans_lengths;
+our %TLEN = ();
 
 sub gen_prompt_section
 {
@@ -673,6 +676,33 @@ sub gen_ps2
 	return render( 'ps2' , @line ) . tput_sequence( 'sgr0' );
 }
 
+sub get_config_overrides
+{
+	foreach my $k ( keys %CONFIG ) {
+		next unless exists $ENV{ "SPP_" . uc($k) };
+		my $ev = $ENV{ "SPP_" . uc($k) };
+		next if $ev eq '';
+
+		my $vt = ref $CONFIG{ $k };
+		#print STDERR "$k -> SPP_" . uc($k) . " = $ev / $vt\n";
+		if ( !$vt ) {
+			$CONFIG{ $k } = $ev;
+		} elsif ( $vt eq 'ARRAY' ) {
+			$CONFIG{ $k } = [ map {
+					$_ =~ s/^\s+//; $_ =~ s/\s+$//; $_
+				} ( split /,/ , $ev ) ];
+		} elsif ( $vt eq 'HASH' ) {
+			$CONFIG{ $k } = { map {
+					$_ =~ s/^\s+//; $_ =~ s/\s+$//; split /:/ , $_ , 2
+				} ( split /,/ , $ev ) };
+		}
+	}
+}
+
+#####
+
+get_config_overrides if $CONFIG{allow_env_overrides};
+%TLEN = compute_trans_lengths;
 my $ps1 = gen_top_line;
 my ( $ill , $ilt ) = gen_input_line;
 $ps1 .= $ilt;
