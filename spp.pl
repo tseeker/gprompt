@@ -19,6 +19,7 @@ our %CONFIG = (
 		'userhost' ,
 		#'load' ,
 		#'prevcmd' ,
+		#'git' ,
 	] ,
 	# - Section generator for the central part of the top bar (undef if unused)
 	layout_middle => 'cwd' ,
@@ -28,6 +29,7 @@ our %CONFIG = (
 		#'userhost' ,
 		'load' ,
 		#'prevcmd' ,
+		'git' ,
 	] ,
 	# - Section generators for the input bar
 	layout_input => [
@@ -35,8 +37,9 @@ our %CONFIG = (
 		#'userhost' ,
 		#'load' ,
 		'prevcmd' ,
+		#'git' ,
 	] ,
-	# - Always generate input line ?
+	# - Always generate input line?
 	layout_input_always => 0 ,
 
 	# CURRENT WORKING DIRECTORY
@@ -48,7 +51,7 @@ our %CONFIG = (
 	uh_username => 1 ,
 	# - Display hostname? 0=no, 1=always, 2=remote only
 	uh_hostname => 2 ,
-	# - Display symbol for remote hosts ?
+	# - Display symbol for remote hosts?
 	uh_remote => 1 ,
 
 	# DATE/TIME
@@ -73,11 +76,23 @@ our %CONFIG = (
 
 	# LOAD AVERAGE
 	# - Minimal load average before the section is displayed
-	load_min => 0 ,
+	load_min => 13 ,
+
+	# GIT
+	# - Branches for which the prompt should emit a strong warning
+	git_branch_danger => [ 'main' , 'master' ] ,
+	# - Branches for which the prompt should emit a weak warning
+	git_branch_warn => [ 'dev' , 'develop' ] ,
+	# - Warning mode for detached heads (0=none, 1=weak, 2=strong)
+	git_detached_warning => 2 ,
+	# - Show git status?
+	git_show_status => 1 ,
+	# - Show git stash count?
+	git_show_stash => 1 ,
 );
 
 
-#-------------------------------------------------------------------------------
+#===============================================================================
 # THEMES
 
 our %THEMES = ();
@@ -161,9 +176,46 @@ $THEMES{powerline_yb} = {
 	# Load average - High load colors
 	load_high_fg => 231 ,
 	load_high_bg => 130 ,
+
+	# Git - Branch symbol
+	git_branch_symbol => ' ' ,
+	# Git - Branch colors - No warning
+	git_branch_ok_bg => 33 ,
+	git_branch_ok_fg => 15 ,
+	# Git - Branch colors - Weak warning
+	git_branch_warn_bg => 139 ,
+	git_branch_warn_fg => 0 ,
+	# Git - Branch colors - Strong warning
+	git_branch_danger_bg => 220 ,
+	git_branch_danger_fg => 0 ,
+	# Git - Repo state colors
+	git_repstate_bg => 220 ,
+	git_repstate_fg => 0 ,
+	# Git - Untracked symbol and colors
+	git_untracked_symbol => '❄' ,
+	git_untracked_bg => 220 ,
+	git_untracked_normal_fg => 0 ,
+	git_untracked_add_fg => 0 ,
+	git_untracked_mod_fg => 0 ,
+	git_untracked_del_fg => 0 ,
+	# Git - Indexed symbol and colors
+	git_indexed_symbol => '☰' ,
+	git_indexed_bg => 139 ,
+	git_indexed_normal_fg => 0 ,
+	git_indexed_add_fg => 0 ,
+	git_indexed_mod_fg => 0 ,
+	git_indexed_del_fg => 0 ,
+	# Git - Add/modify/delete symbols
+	git_add_symbol => '+' ,
+	git_mod_symbol => '±' ,
+	git_del_symbol => '∅' ,
+	# Git stash symbol and color
+	git_stash_symbol => '‡' ,
+	git_stash_bg => 33 ,
+	git_stash_fg => 15 ,
 };
 
-#-------------------------------------------------------------------------------
+#===============================================================================
 # MAIN PROGRAM
 
 chop( our $COLUMNS = `tput cols` );
@@ -202,7 +254,6 @@ sub get_section_length
 {
 	my $section = shift;
 	my $len = 0;
-	#use Data::Dumper; print Dumper( $section );
 	foreach my $item ( @{ $section->{content} } ) {
 		next if ref $item;
 		$len += length $item;
@@ -272,9 +323,14 @@ sub gen_prompt_section
 
 sub gen_prompt_sections
 {
+	my $reverse = shift;
+	my @input = @_;
+	@input = reverse @input if $reverse;
 	my @output = ( );
-	foreach my $section ( @_ ) {
-		@output = ( @output , gen_prompt_section( $section ) );
+	foreach my $section ( @input ) {
+		my @section = gen_prompt_section( $section );
+		@section = reverse @section if $reverse;
+		@output = ( @output , @section );
 	}
 	return @output;
 }
@@ -369,7 +425,7 @@ sub gen_top_line
 	# Generate content
 	my ( @lm , @middle , @mr ) = ( );
 	my $mc = themed 'bg_middle';
-	@left = gen_prompt_sections( @left );
+	@left = gen_prompt_sections( 0 , @left );
 	if ( defined $midGen ) {
 		@middle = ( gen_prompt_section( $midGen ) );
 		if ( @middle ) {
@@ -383,7 +439,7 @@ sub gen_top_line
 			}
 		}
 	}
-	@right = gen_prompt_sections( reverse @right );
+	@right = gen_prompt_sections( 1 , @right );
 
 	# Adapt to width
 	my $len = get_length( ( @lm , @middle , @mr ) );
@@ -410,7 +466,8 @@ sub gen_input_line
 	my @input = @{ $CONFIG{layout_input} };
 	return "" unless @input || $CONFIG{layout_input_always};
 	my $len = 0;
-	@input = adapt_to_width( \$len , 'input' , gen_prompt_sections( @input ) );
+	@input = adapt_to_width( \$len , 'input' ,
+			gen_prompt_sections( 0 , @input ) );
 	push @input , {content=>['']} unless @input;
 	return ( $len ,
 		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) )
@@ -438,8 +495,12 @@ $ps1 .= tput_sequence( 'sgr0' ) if $ps1;
 my $ps2 = gen_ps2( $ill );
 print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
 
-#-------------------------------------------------------------------------------
+
+#===============================================================================
 # SECTION RENDERERS
+
+#-------------------------------------------------------------------------------
+# DATE/TIME
 
 sub render_datetime
 {
@@ -456,6 +517,9 @@ sub render_datetime
 	}
 	return { bg => themed 'dt_bg' , content => [@out] };
 }
+
+#-------------------------------------------------------------------------------
+# Current working directory
 
 sub render_cwd
 {
@@ -479,6 +543,9 @@ sub render_cwd
 		content => [ {fg=>themed 'cwd_fg_color'} , $dir ]
 	};
 }
+
+#-------------------------------------------------------------------------------
+# USER/HOST
 
 sub render_userhost
 {
@@ -520,6 +587,9 @@ sub render_userhost
 	};
 }
 
+#-------------------------------------------------------------------------------
+# PREVIOUS COMMAND STATE
+
 sub render_prevcmd
 {
 	my ( $ss , $sc , $pc , $cl ) = map {
@@ -553,6 +623,9 @@ sub render_prevcmd
 		content => [ @out ] ,
 	};
 }
+
+#-------------------------------------------------------------------------------
+# LOAD AVERAGE
 
 sub render_load
 {
@@ -588,4 +661,159 @@ sub render_load
 		bg => themed( 'load_' . $cat . '_bg' ) ,
 		content => [ {fg=>themed( 'load_' . $cat . '_fg' )}, $load ]
 	};
+}
+
+#-------------------------------------------------------------------------------
+# GIT REPOSITORY INFORMATION
+
+sub _render_git_branch
+{
+	# Get branch and associated warning level
+	chop( my $branch = `git symbolic-ref -q HEAD` );
+	my $detached = ( $? != 0 );
+	my $branch_warning;
+	if ( $detached ) {
+		chop( $branch = `git rev-parse --short -q HEAD` );
+		$branch = "($branch)";
+		$branch_warning = $CONFIG{git_detached_warning};
+	} else {
+		$branch =~ s!^refs/heads/!!;
+		my %branch_tab = (
+			( map { $_ => 1 } @{ $CONFIG{git_branch_warn} } ) ,
+			( map { $_ => 2 } @{ $CONFIG{git_branch_danger} } ) ,
+		);
+		#use Data::Dumper; print STDERR Dumper( \%branch_tab );
+		$branch_warning = exists( $branch_tab{ $branch } )
+				? $branch_tab{ $branch } : 0;
+	}
+	$branch_warning = qw(ok warn danger)[ $branch_warning ];
+	return {
+		bg => themed( 'git_branch_' . $branch_warning . '_bg' ) ,
+		content => [
+			{fg => themed( 'git_branch_' . $branch_warning . '_fg' )} ,
+			themed( 'git_branch_symbol' ) . $branch
+		]
+	};
+}
+
+sub _render_git_repstate
+{
+	return () unless open( my $fh ,
+			'git rev-parse --git-dir --is-inside-git-dir '
+			. '--is-bare-repository 2>/dev/null|' );
+	chop( my $gd = <$fh> );
+	chop( my $igd = <$fh> );
+	chop( my $bare = <$fh> );
+
+	my $str = undef;
+	if ( $bare eq 'true' ) {
+		$str = 'bare';
+	} elsif ( $igd eq 'true' ) {
+		$str = 'in git dir';
+	} else {
+		if ( -f "$gd/MERGE_HEAD" ) {
+			$str = 'merge';
+		} elsif ( -d "$gd/rebase-apply" || -d "$gd/rebase-merge" ) {
+			$str = 'rebase';
+		} elsif ( -f "$gd/CHERRY_PICK_HEAD" ) {
+			$str = 'cherry-pick';
+		}
+	}
+	return () unless defined $str;
+	return {
+		bg => themed 'git_repstate_bg' ,
+		content => [
+			{fg=>themed 'git_repstate_fg'},
+			$str
+		]
+	};
+}
+
+sub _render_git_status
+{
+	# Read status information
+	my %parts = (
+		'\?\?' => 0 ,
+		'.M' => 1 ,
+		'.D' => 2 ,
+		'A.' => 3 ,
+		'M.' => 4 ,
+		'D.' => 5 ,
+	);
+	my @counters = ( 0 ) x 6;
+	if ( open( my $fh , 'git status --porcelain 2>/dev/null |' ) ) {
+		while ( my $line = <$fh> ) {
+			my $sol = substr $line , 0 , 2;
+			foreach my $re ( keys %parts ) {
+				$counters[ $parts{ $re } ] ++
+					if $sol =~ /^$re$/;
+			}
+		}
+		close $fh;
+	}
+
+	# Generate status sections
+	my @sec_names = ( 'untracked' , 'indexed' );
+	my @sec_parts = ( 'normal' , 'add' , 'mod' , 'del' );
+	my @part_syms = map { themed( 'git_' . $_ . '_symbol' ) } @sec_parts[1..3];
+	my @out = ();
+	foreach my $sidx ( 0..1 ) {
+		my $pidx0 = $sidx * 3;
+		next unless $counters[ $pidx0 ]
+				|| $counters[ $pidx0 + 1 ]
+				|| $counters[ $pidx0 + 2 ];
+
+		my $sec_name = $sec_names[ $sidx ];
+		my @fg = map {
+				themed( 'git_' . $sec_name . '_' . $_ . '_fg' )
+			} @sec_parts;
+		my @subsecs = ();
+		foreach my $i ( 0..2 ) {
+			next unless $counters[ $pidx0 + $i ];
+			@subsecs = ( @subsecs ,
+				{fg=>$fg[ $i + 1 ]} ,
+				' ' . $part_syms[ $i ] ,
+				{fg=>$fg[ 0 ]} ,
+				$counters[ $pidx0 + $i ]
+			);
+		}
+		push @out , {
+			bg => themed( 'git_' . $sec_name . '_bg' ) ,
+			content => [
+				{fg=>$fg[0]} ,
+				themed( 'git_' . $sec_name . '_symbol' ) ,
+				@subsecs
+			]
+		};
+	}
+
+	return @out,
+}
+
+sub _render_git_stash
+{
+	return () unless open( my $fh , 'git stash list 2>/dev/null|' );
+	my @lines = grep { $_ =~ /^stash/ } <$fh>;
+	close( $fh );
+
+	my $nl = scalar( @lines );
+	return () unless $nl;
+	return {
+		bg => themed('git_stash_bg') ,
+		content => [
+			{fg=>themed('git_stash_fg')} ,
+			themed('git_stash_symbol') . $nl
+		]
+	};
+}
+
+sub render_git
+{
+	my @out = ( );
+	system( 'git rev-parse --is-inside-work-tree >/dev/null 2>&1' );
+	return @out if $? != 0;
+	@out = ( @out , _render_git_branch , _render_git_repstate );
+	@out = ( @out , _render_git_status ) if $CONFIG{git_show_status};
+	@out = ( @out , _render_git_stash ) if $CONFIG{git_show_stash};
+	return @out;
 }
