@@ -162,8 +162,6 @@ sub init_themes
 		load_high_fg => thref( 'fg3' ) ,
 		load_high_bg => thref( 'bg3' ) ,
 
-		# Git - Branch symbol
-		git_branch_symbol => "\x{e0a0} " ,
 		# Git - Branch colors - No warning
 		git_branch_ok_bg => thref( 'bg0' ) ,
 		git_branch_ok_fg => thref( 'fg0' ) ,
@@ -244,6 +242,9 @@ sub init_themes
 		pcmd_ok_fg => thref( 'fg3' ) ,
 		# Previous command state - Error text / background color
 		pcmd_err_fg => thref( 'fg0' ) ,
+
+		# Git - Branch symbol
+		git_branch_symbol => "\x{e0a0} " ,
 	);
 	# Powerline-based, using yellow and blue
 	$t{powerline_yb} = {
@@ -311,6 +312,9 @@ sub init_themes
 		pcmd_ok_fg => thref( 'fg0' ) ,
 		# Previous command state - Error text / background color
 		pcmd_err_fg => thref( 'fg3' ) ,
+
+		# Git - Branch symbol
+		git_branch_symbol => "╟╯" ,
 	);
 	# Block-based, using green/yellow/red
 	$t{blocks_gyr} = {
@@ -389,6 +393,8 @@ our %THEMES = init_themes;
 
 chop( our $COLUMNS = `tput cols` );
 our %TCCACHE = ();
+our %TLEN = ();
+our %SCACHE = ();
 
 sub tput_sequence
 {
@@ -495,14 +501,16 @@ sub compute_trans_lengths
 	}
 	return %out;
 }
-our %TLEN = ();
 
 sub gen_prompt_section
 {
-	no strict 'refs';
 	my $section = shift;
-	my $func = 'render_' . $section;
-	return &$func( );
+	unless ( exists $SCACHE{ $section } ) {
+		no strict 'refs';
+		my $func = 'render_' . $section;
+		$SCACHE{ $section } = [ &$func ];
+	}
+	return @{ $SCACHE{ $section } };
 }
 
 sub gen_prompt_sections
