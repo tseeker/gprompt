@@ -49,6 +49,14 @@ our %CONFIG = (
 	# - Always generate input line?
 	layout_input_always => 0 ,
 
+	# TERMINAL TITLE
+	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both
+	term_set_title => 1 ,
+	# - Generators to use
+	term_generators => [ 'userhost' , 'cwd' , 'pyenv' ] ,
+	# - Separator
+	term_separator => ' ::: ' ,
+
 	# CURRENT WORKING DIRECTORY
 	# - Max width as a percentage of the terminal's width
 	cwd_max_width => 50 ,
@@ -684,6 +692,29 @@ sub gen_ps2
 	return render( 'ps2' , @line ) . tput_sequence( 'sgr0' );
 }
 
+sub gen_term_title
+{
+	my @parts = @{ $CONFIG{term_generators} };
+	return '' unless @parts && $CONFIG{term_set_title};
+	@parts = gen_prompt_sections( 0 , @parts );
+	my @str_parts = ();
+	foreach my $part ( @parts ) {
+		my $cur = '';
+		foreach my $sub ( @{ $part->{content} } ) {
+			next if ref $sub;
+			$cur .= $sub;
+		}
+		$cur =~ s/[^\x20-\x7f]//g;
+		push @str_parts , $cur if $cur;
+	}
+	return '' unless @str_parts;
+	my $main = join( $CONFIG{term_separator} , @str_parts );
+	my $out = '';
+	$out .= "\\033]0;$main\\007" if $CONFIG{term_set_title} & 1;
+	$out .= "\\033]1;$main\\007" if $CONFIG{term_set_title} & 2;
+	return $out;
+}
+
 sub get_config_overrides
 {
 	foreach my $k ( keys %CONFIG ) {
@@ -711,10 +742,11 @@ sub get_config_overrides
 
 get_config_overrides if $CONFIG{allow_env_overrides};
 %TLEN = compute_trans_lengths;
-my $ps1 = gen_top_line;
+my $pg = gen_term_title;
+my $ps1 = $pg . gen_top_line;
 my ( $ill , $ilt ) = gen_input_line;
 $ps1 .= $ilt;
-my $ps2 = gen_ps2( $ill );
+my $ps2 = $pg . gen_ps2( $ill );
 print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
 
 
