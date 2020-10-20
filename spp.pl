@@ -97,6 +97,8 @@ our %CONFIG = (
 
 our %THEMES = ();
 
+sub thref { bless {(@_==2)?(t=>$_[0],r=>$_[1]):(r=>$_[0])}, 'ThemeRef'; }
+
 # Powerline based, using yellow and blue
 $THEMES{powerline_yb} = {
 	# Padding character
@@ -120,99 +122,109 @@ $THEMES{powerline_yb} = {
 	# Secondary prompt suffix
 	ps2_suffix => '\f0\b2\f2\b1 ' ,
 
+	# Color gradient to use
+	bg0 => 21 , bg1 => 61 , bg2 => 143 , bg3 => 226 ,
+	fg3 => 21 , fg2 => 26 , fg1 => 184 , fg0 => 226 ,
+	# Default foreground color
+	fg => 15 ,
+
 	# Extra colors for transition strings
 	transition => [ 233 ] ,
-	# Default left side background color
+	# Default left side colors
 	bg_left => 239 ,
-	# Default middle background color
+	fg_left => thref( 'fg' ) ,
+	# Default middle colors
 	bg_middle => 235 ,
+	fg_middle => thref( 'fg' ) ,
 	# Default right side background color
-	bg_right => 239 ,
+	bg_right => thref( 'bg_left' ) ,
+	fg_right => thref( 'fg' ) ,
 	# Default input prompt background color
 	bg_input => 238 ,
+	fg_input => thref( 'fg' ) ,
 	# Secondary prompt backaground
 	bg_ps2 => 234 ,
 
 	# Current working directory - Truncation string
 	cwd_trunc => '…' ,
 	# Current working directory - Foreground / background colors
-	cwd_fg_color => 15 ,
+	cwd_fg_color => -1 ,
 	cwd_bg_color => -1 ,
 
 	# User@host - Remote host symbol
 	uh_remote_symbol => '↥' ,
 	# User@host - User - Foreground and background colors
-	uh_user_fg => 15 ,
-	uh_user_bg => 18 ,
+	uh_user_fg => thref( 'fg0' ) ,
+	uh_user_bg => thref( 'bg0' ) ,
 	# User@host - Root - Foreground and background colors
-	uh_root_fg => 0 ,
-	uh_root_bg => 220 ,
+	uh_root_fg => thref( 'fg3' ) ,
+	uh_root_bg => thref( 'bg3' ) ,
 
 	# Date/time - Colors
-	dt_time_fg => 15 ,
-	dt_date_fg => 15 ,
+	dt_time_fg => -1 ,
+	dt_date_fg => -1 ,
 	dt_bg => -1 ,
 
 	# Previous command state - Symbols
 	pcmd_ok_sym => '✓' ,
 	pcmd_err_sym => '✗' ,
 	# Previous command state - OK text / background color
-	pcmd_ok_fg => 21 ,
+	pcmd_ok_fg => thref( 'fg3' ) ,
 	pcmd_ok_bg => -1 ,
 	# Previous command state - Error text / background color
-	pcmd_err_fg => 220 ,
+	pcmd_err_fg => thref( 'fg0' ) ,
 	pcmd_err_bg => -1 ,
 	# Previous command state - Other text foreground
-	pcmd_text_fg => 15 ,
+	pcmd_text_fg => -1 ,
 
 	# Load average - Symbol or text
 	load_title => '↟' ,
 	# Load average - Low load colors
-	load_low_fg => 15 ,
+	load_low_fg => -1 ,
 	load_low_bg => -1 ,
 	# Load average - Medium load colors
-	load_med_fg => 231 ,
-	load_med_bg => 135 ,
+	load_med_fg => thref( 'fg1' ) ,
+	load_med_bg => thref( 'bg1' ) ,
 	# Load average - High load colors
-	load_high_fg => 231 ,
-	load_high_bg => 130 ,
+	load_high_fg => thref( 'fg3' ) ,
+	load_high_bg => thref( 'bg3' ) ,
 
 	# Git - Branch symbol
 	git_branch_symbol => ' ' ,
 	# Git - Branch colors - No warning
-	git_branch_ok_bg => 33 ,
-	git_branch_ok_fg => 15 ,
+	git_branch_ok_bg => thref( 'bg0' ) ,
+	git_branch_ok_fg => thref( 'fg0' ) ,
 	# Git - Branch colors - Weak warning
-	git_branch_warn_bg => 139 ,
-	git_branch_warn_fg => 0 ,
+	git_branch_warn_bg => thref( 'bg2' ) ,
+	git_branch_warn_fg => thref( 'fg2' ) ,
 	# Git - Branch colors - Strong warning
-	git_branch_danger_bg => 220 ,
+	git_branch_danger_bg => thref( 'bg3' ) ,
 	git_branch_danger_fg => 0 ,
 	# Git - Repo state colors
-	git_repstate_bg => 220 ,
-	git_repstate_fg => 0 ,
+	git_repstate_bg => thref( 'bg1' ) ,
+	git_repstate_fg => thref( 'fg1' ) ,
 	# Git - Untracked symbol and colors
 	git_untracked_symbol => '❄' ,
-	git_untracked_bg => 220 ,
-	git_untracked_normal_fg => 0 ,
-	git_untracked_add_fg => 0 ,
-	git_untracked_mod_fg => 0 ,
-	git_untracked_del_fg => 0 ,
+	git_untracked_bg => thref( 'bg3' ) ,
+	git_untracked_normal_fg => thref( 'fg3' ) ,
+	git_untracked_add_fg => thref( 'fg3' ) ,
+	git_untracked_mod_fg => thref( 'fg3' ) ,
+	git_untracked_del_fg => thref( 'fg3' ) ,
 	# Git - Indexed symbol and colors
 	git_indexed_symbol => '☰' ,
-	git_indexed_bg => 139 ,
-	git_indexed_normal_fg => 0 ,
-	git_indexed_add_fg => 0 ,
-	git_indexed_mod_fg => 0 ,
-	git_indexed_del_fg => 0 ,
+	git_indexed_bg => thref( 'bg2' ) ,
+	git_indexed_normal_fg => thref( 'fg2' ) ,
+	git_indexed_add_fg => thref( 'fg2' ) ,
+	git_indexed_mod_fg => thref( 'fg2' ) ,
+	git_indexed_del_fg => thref( 'fg2' ) ,
 	# Git - Add/modify/delete symbols
 	git_add_symbol => '+' ,
 	git_mod_symbol => '±' ,
 	git_del_symbol => '∅' ,
 	# Git stash symbol and color
 	git_stash_symbol => '‡' ,
-	git_stash_bg => 33 ,
-	git_stash_fg => 15 ,
+	git_stash_bg => thref( 'bg1' ) ,
+	git_stash_fg => thref( 'fg1' ) ,
 };
 
 #===============================================================================
@@ -238,6 +250,17 @@ sub set_color
 }
 
 our $THEME = undef;
+sub theme_resolve
+{
+	my ( $theme , $key ) = @_;
+	my $value = $theme->{ $key };
+	if ( ref( $value ) eq 'ThemeRef' ) {
+		my $rt = exists( $value->{t} ) ? $THEMES{ $value->{t} } : $theme;
+		$theme->{ $key } = theme_resolve( $rt , $value->{r} );
+		$value = $theme->{ $key };
+	}
+	return $value;
+}
 sub themed($)
 {
 	my $k = shift;
@@ -246,6 +269,10 @@ sub themed($)
 			%{ $THEMES{ $CONFIG{layout_theme} } } ,
 			%{ $CONFIG{layout_theme_overrides} } ,
 		};
+		my @to_resolve = grep { ref($THEME->{$_}) eq 'ThemeRef' } keys %$THEME;
+		foreach my $k ( @to_resolve ) {
+			theme_resolve( $THEME , $k );
+		}
 	}
 	return $THEME->{ $k };
 }
@@ -364,6 +391,7 @@ sub add_transitions
 	my $prefix = themed( $name . '_prefix' );
 	my $separator = themed( $name . '_separator' );
 	my $suffix = themed( $name . '_suffix' );
+	my $bgDefault = themed( 'bg_' . $name );
 
 	my $prevBg = undef;
 	my $curBg = $cBefore;
@@ -371,6 +399,7 @@ sub add_transitions
 	foreach my $section ( @_ ) {
 		$prevBg = $curBg;
 		$curBg = ( exists $section->{bg} ) ? $section->{bg} : -1;
+		$curBg = $bgDefault if $curBg < 0;
 		my $trans = scalar(@out) ? $separator : $prefix;
 		@out = ( @out ,
 			gen_transition( $trans , $prevBg , $curBg ) ,
@@ -389,7 +418,8 @@ sub render
 	my $out = '';
 	my $mustSetFg = undef;
 	my $mustSetBg = undef;
-	my $cDefault = themed( 'bg_' . $name );
+	my $bgDefault = themed( 'bg_' . $name );
+	my $fgDefault = themed( 'fg_' . $name );
 	foreach my $section ( @_ ) {
 		$mustSetBg = $section->{bg} if exists $section->{bg};
 		foreach my $part ( @{ $section->{content} } ) {
@@ -398,11 +428,11 @@ sub render
 				$mustSetFg = $part->{fg} if exists $part->{fg};
 			} else {
 				if ( defined $mustSetBg ) {
-					$mustSetBg = $cDefault if $mustSetBg < 0;
+					$mustSetBg = $bgDefault if $mustSetBg < 0;
 					$out .= set_color( 'b' , $mustSetBg );
 				}
 				if ( defined $mustSetFg ) {
-					$mustSetFg = $cDefault if $mustSetFg < 0;
+					$mustSetFg = $fgDefault if $mustSetFg < 0;
 					$out .= set_color( 'f' , $mustSetFg );
 				}
 				$part =~ s/\\/\\\\/g;
@@ -458,7 +488,7 @@ sub gen_top_line
 	my $txt = render( 'left' , add_transitions( 'left' , 0 , $mc , @left ) );
 	$txt .= render( 'middle' , @lm , @middle , @mr , @mpad );
 	$txt .= render( 'right' , add_transitions( 'right' , $mc , 0 , @right ) );
-	return $txt . "\\n";
+	return $txt . tput_sequence( 'sgr0' ) . "\\n";
 }
 
 sub gen_input_line
@@ -471,6 +501,7 @@ sub gen_input_line
 	push @input , {content=>['']} unless @input;
 	return ( $len ,
 		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) )
+			 . tput_sequence( 'sgr0' )
 	);
 }
 
@@ -491,7 +522,6 @@ sub gen_ps2
 my $ps1 = gen_top_line;
 my ( $ill , $ilt ) = gen_input_line;
 $ps1 .= $ilt;
-$ps1 .= tput_sequence( 'sgr0' ) if $ps1;
 my $ps2 = gen_ps2( $ill );
 print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
 
@@ -602,12 +632,12 @@ sub render_prevcmd
 	my $col = themed( ( $status == 0 ) ? 'pcmd_ok_fg' : 'pcmd_err_fg' );
 	my @out = ();
 	if ( $ss ) {
-		push @out , { fg => ( $cl & 1 != 0 ) ? $col : -1 };
+		push @out , { fg => ( ( $cl & 1 ) != 0 ) ? $col : -1 };
 		push @out , themed( ( $status == 0 ) ? 'pcmd_ok_sym' : 'pcmd_err_sym' );
 	}
 	if ( $sc ) {
 		push @out , ' ' if @out;
-		push @out , { fg => ( $cl & 2 != 0 ) ? $col : -1 };
+		push @out , { fg => ( ( ( $cl & 2 ) != 0 ) ? $col : -1 ) };
 		if ( $pc ) {
 			my $str = sprintf '%' . ( $pc * 3 ) . 's' , $status;
 			my $pad = themed 'padding';
