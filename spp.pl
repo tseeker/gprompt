@@ -108,22 +108,22 @@ $THEMES{powerline_yb} = {
 	padding => ' ' ,
 	# Left side of top line
 	left_prefix => '\b1 ' ,
-	left_separator => '\f0\b2\f2\b1' ,
-	left_suffix => '\f0\b2\f2\b1 ' ,
+	left_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
+	left_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
 	# Middle of top line
 	middle_prefix => '' ,
 	middle_separator => ' | ' ,
 	middle_suffix => '' ,
 	# Right side of top line
-	right_prefix => '\f2\b0\f1\b2\b1' ,
-	right_separator => '\f2\b0\f1\b2' ,
+	right_prefix => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}".'\b1' ,
+	right_separator => '\f2\b0'."\x{e0b2}".'\f1\b2'."\x{e0b2}" ,
 	right_suffix => '\b0 ' ,
 	# Input line
 	input_prefix => '\b1 ' ,
-	input_separator => '\f0\b2\f2\b1' ,
-	input_suffix => '\f0\b2\f2\b1 ' ,
+	input_separator => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}" ,
+	input_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
 	# Secondary prompt suffix
-	ps2_suffix => '\f0\b2\f2\b1 ' ,
+	ps2_suffix => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
 
 	# Color gradient to use
 	bg0 => 21 , bg1 => 61 , bg2 => 143 , bg3 => 226 ,
@@ -193,7 +193,7 @@ $THEMES{powerline_yb} = {
 	load_high_bg => thref( 'bg3' ) ,
 
 	# Git - Branch symbol
-	git_branch_symbol => ' ' ,
+	git_branch_symbol => "\x{e0a0} " ,
 	# Git - Branch colors - No warning
 	git_branch_ok_bg => thref( 'bg0' ) ,
 	git_branch_ok_fg => thref( 'fg0' ) ,
