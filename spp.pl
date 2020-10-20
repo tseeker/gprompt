@@ -178,7 +178,7 @@ sub init_themes
 		git_branch_warn_fg => thref( 'fg2' ) ,
 		# Git - Branch colors - Strong warning
 		git_branch_danger_bg => thref( 'bg3' ) ,
-		git_branch_danger_fg => 0 ,
+		git_branch_danger_fg => thref( 'fg3' ) ,
 		# Git - Repo state colors
 		git_repstate_bg => thref( 'bg1' ) ,
 		git_repstate_fg => thref( 'fg1' ) ,
@@ -251,8 +251,9 @@ sub init_themes
 		# Previous command state - Error text / background color
 		pcmd_err_fg => thref( 'fg0' ) ,
 
-		# Git - Branch symbol
+		# Git
 		git_branch_symbol => "\x{e0a0} " ,
+		git_branch_danger_fg => 0 ,
 	);
 	# Powerline-based, using yellow and blue
 	$t{powerline_yb} = {
