@@ -812,7 +812,7 @@ sub render_userhost
 	my $is_remote = 0;
 	if ( $hn == 2 || $CONFIG{uh_remote} ) {
 		foreach my $ev ( qw( SSH_CLIENT SSH2_CLIENT SSH_TTY ) ) {
-			if ( exists($ENV{$ev}) && $ENV{$ev} != '' ) {
+			if ( exists($ENV{$ev}) && $ENV{$ev} ne '' ) {
 				$is_remote = 1;
 				last;
 			}
