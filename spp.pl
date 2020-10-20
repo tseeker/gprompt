@@ -19,6 +19,7 @@ our %CONFIG = (
 		'userhost' ,
 		#'load' ,
 		#'prevcmd' ,
+		#'pyenv' ,
 		#'git' ,
 	] ,
 	# - Section generator for the central part of the top bar (undef if unused)
@@ -29,6 +30,7 @@ our %CONFIG = (
 		#'userhost' ,
 		'load' ,
 		#'prevcmd' ,
+		'pyenv' ,
 		'git' ,
 	] ,
 	# - Section generators for the input bar
@@ -37,6 +39,7 @@ our %CONFIG = (
 		#'userhost' ,
 		#'load' ,
 		'prevcmd' ,
+		#'pyenv' ,
 		#'git' ,
 	] ,
 	# - Always generate input line?
@@ -68,7 +71,7 @@ our %CONFIG = (
 	# - Display OK/failed symbol?
 	pcmd_show_symbol => 1 ,
 	# - Display status code? 0=no, 1=always, 2=on failure
-	pcmd_show_code => 1 ,
+	pcmd_show_code => 2 ,
 	# - Pad status code display? 0 = no, -1 = left aligned, 1 = right aligned
 	pcmd_pad_code => -1 ,
 	# Success/failure colors for 0=nothing, 1=symbol, 2=code, 3=both
@@ -227,6 +230,10 @@ $THEMES{powerline_yb} = {
 	git_stash_symbol => '‡' ,
 	git_stash_bg => thref( 'bg1' ) ,
 	git_stash_fg => thref( 'fg1' ) ,
+
+	# Python virtual environment section colors
+	pyenv_bg => -1 ,
+	pyenv_fg => -1 ,
 };
 
 #===============================================================================
@@ -849,4 +856,26 @@ sub render_git
 	@out = ( @out , _render_git_status ) if $CONFIG{git_show_status};
 	@out = ( @out , _render_git_stash ) if $CONFIG{git_show_stash};
 	return @out;
+}
+
+#-------------------------------------------------------------------------------
+# PYTHON VIRTUAL ENVIRONMENT
+
+sub render_pyenv
+{
+	return () unless $ENV{VIRTUAL_ENV} || $ENV{CONDA_DEFAULT_ENV};
+	my $env;
+	if ( $ENV{VIRTUAL_ENV} ) {
+		$env = $ENV{VIRTUAL_ENV};
+	} else {
+		$env = $ENV{CONDA_VIRTUAL_ENV};
+	}
+	$env =~ s!.*/!!;
+	return {
+		bg => themed 'pyenv_bg' ,
+		content => [
+			{fg=>themed 'pyenv_fg'} ,
+			'PY:' . $env
+		] ,
+	};
 }
