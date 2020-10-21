@@ -43,7 +43,7 @@ GPrompt may be installed either at the system level or on a per-user basis.
     cp themes/* /usr/share/gprompt/themes/
 
 * Users may then use GPrompt by adding the following line to their `~/.bashrc`
-  files (it could also be added to `/etc/skel/.bashrc`) :
+  files (it could also be added to `/etc/skel/.bashrc` or `/etc/bash.bashrc`):
 
 `export PROMPT_COMMAND='eval "$(/usr/share/gprompt/gprompt.pl $?)"'`
 
