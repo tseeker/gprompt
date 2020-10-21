@@ -95,12 +95,15 @@ The `layout_*` variables control the prompt's layout and general appearance:
   if it contains an empty string.
 * `layout_theme_overrides` may contain local overrides to the theme's contents
   (table, empty by default).
-* `layout_left`, `layout_middle`, `layout_right` and `layout_input` configure
-  the generators that will provide the contents of the top left, top center,
-  top right and bottom left sections of the prompt. All 4 variables are lists
-  of generator names; by default, the top bar is empty (the script does not
-  render it) and the input prompt only uses the `userhost` and `cwd` generators,
-  emulating a rather basic `\u@\h:\w` prompt.
+* `layout_left`, `layout_right` and `layout_input` configure the generators that
+  will provide the contents of the top left, top center, top right and bottom
+  left sections of the prompt. All 3 variables are lists of generator names; by
+  default, the top bar is empty (the script does not render it) and the input
+  prompt only uses the `userhost` and `cwd` generators, emulating a rather basic
+  `\u@\h:\w` prompt.
+* `layout_middle` defines the generator from which the top middle section will
+  be displayed. Background colors emitted by the generator are ignored. By
+  default this entry contains an empty string.
 * `layout_input_always` determines whether the input line should be rendered
   even if no generators are specified (`0` or `1`, default `0`).
 
