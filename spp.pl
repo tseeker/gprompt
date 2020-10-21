@@ -12,8 +12,11 @@ use POSIX qw(strftime);
 # DEFAULT CONFIGURATION ====================================================={{{
 
 our %CONFIG = (
-	# Allow overrides from environment
-	allow_env_overrides => 0 ,
+	# CONFIGURATION
+	# - Issue warnings about configuration files
+	cfg_warn_files => 1 ,
+	# - Allow overrides from environment
+	cfg_from_env => 0 ,
 
 	# LAYOUT
 	# - Theme and local overrides
@@ -740,11 +743,32 @@ sub get_config_overrides
 	}
 }
 
+sub load_config
+{
+	foreach my $cfg_file ( ( '/etc/spp-defaults.rc' , "$ENV{HOME}/.spp.rc" ) ) {
+		next unless -f $cfg_file;
+		my $data = do $cfg_file;
+		my $warn = $CONFIG{cfg_warn_files};
+		if ( $@ ) {
+			warn "could not parse `$cfg_file': $@" if $warn;
+		} elsif ( !defined $data ) {
+			warn "could not do `$cfg_file': $!\n" if $warn;
+		} elsif ( !$data ) {
+			warn "could not run `$cfg_file'\n" if $warn;
+		} elsif ( ref( $data ) ne 'HASH' ) {
+			warn "`$cfg_file' does not contain a hash\n" if $warn;
+		} else {
+			%CONFIG = ( %CONFIG , %$data );
+		}
+	}
+	get_config_overrides if $CONFIG{cfg_from_env};
+}
+
 sub main
 {
+	load_config;
 	%THEMES = init_themes;
 	chop( $COLUMNS = `tput cols` );
-	get_config_overrides if $CONFIG{allow_env_overrides};
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title;
 	my $ps1 = $pg . gen_top_line;
