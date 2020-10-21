@@ -9,6 +9,8 @@ use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime);
 
 
+# DEFAULT CONFIGURATION ====================================================={{{
+
 our %CONFIG = (
 	# Allow overrides from environment
 	allow_env_overrides => 0 ,
@@ -106,9 +108,8 @@ our %CONFIG = (
 	git_show_stash => 1 ,
 );
 
-
-#===============================================================================
-# THEMES
+# }}}
+# THEMES ===================================================================={{{
 
 sub thref { bless {(@_==2)?(t=>$_[0],r=>$_[1]):(r=>$_[0])}, 'ThemeRef'; }
 
@@ -395,12 +396,12 @@ sub init_themes
 	return %t;
 }
 
-our %THEMES = init_themes;
+our %THEMES;
 
-#===============================================================================
-# MAIN PROGRAM
+# }}}
+# MAIN PROGRAM =============================================================={{{
 
-chop( our $COLUMNS = `tput cols` );
+our $COLUMNS;
 our %TCCACHE = ();
 our %TLEN = ();
 our %SCACHE = ();
@@ -739,23 +740,26 @@ sub get_config_overrides
 	}
 }
 
-#####
+sub main
+{
+	%THEMES = init_themes;
+	chop( $COLUMNS = `tput cols` );
+	get_config_overrides if $CONFIG{allow_env_overrides};
+	%TLEN = compute_trans_lengths;
+	my $pg = gen_term_title;
+	my $ps1 = $pg . gen_top_line;
+	my ( $ill , $ilt ) = gen_input_line;
+	$ps1 .= $ilt;
+	my $ps2 = $pg . gen_ps2( $ill );
+	print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
+}
 
-get_config_overrides if $CONFIG{allow_env_overrides};
-%TLEN = compute_trans_lengths;
-my $pg = gen_term_title;
-my $ps1 = $pg . gen_top_line;
-my ( $ill , $ilt ) = gen_input_line;
-$ps1 .= $ilt;
-my $ps2 = $pg . gen_ps2( $ill );
-print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
+main;
 
+# }}}
+# SECTION RENDERERS ========================================================={{{
 
-#===============================================================================
-# SECTION RENDERERS
-
-#-------------------------------------------------------------------------------
-# DATE/TIME
+# Date/time -----------------------------------------------------------------{{{
 
 sub render_datetime
 {
@@ -773,8 +777,8 @@ sub render_datetime
 	return { bg => themed 'dt_bg' , content => [@out] };
 }
 
-#-------------------------------------------------------------------------------
-# Current working directory
+#}}}
+# Current working directory -------------------------------------------------{{{
 
 sub render_cwd
 {
@@ -799,8 +803,8 @@ sub render_cwd
 	};
 }
 
-#-------------------------------------------------------------------------------
-# USER/HOST
+# }}}
+# User/Host -----------------------------------------------------------------{{{
 
 sub render_userhost
 {
@@ -842,8 +846,8 @@ sub render_userhost
 	};
 }
 
-#-------------------------------------------------------------------------------
-# PREVIOUS COMMAND STATE
+# }}}
+# Previous command state ----------------------------------------------------{{{
 
 sub render_prevcmd
 {
@@ -879,8 +883,8 @@ sub render_prevcmd
 	};
 }
 
-#-------------------------------------------------------------------------------
-# LOAD AVERAGE
+# }}}
+# Load average --------------------------------------------------------------{{{
 
 sub render_load
 {
@@ -918,8 +922,8 @@ sub render_load
 	};
 }
 
-#-------------------------------------------------------------------------------
-# GIT REPOSITORY INFORMATION
+# }}}
+# Git repository information ------------------------------------------------{{{
 
 sub _render_git_branch
 {
@@ -1074,8 +1078,8 @@ sub render_git
 	return @out;
 }
 
-#-------------------------------------------------------------------------------
-# PYTHON VIRTUAL ENVIRONMENT
+# }}}
+# Python virtual environment ------------------------------------------------{{{
 
 sub render_pyenv
 {
@@ -1095,3 +1099,7 @@ sub render_pyenv
 		] ,
 	};
 }
+
+# }}}
+
+# }}}
