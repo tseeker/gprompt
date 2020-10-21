@@ -587,6 +587,7 @@ sub gen_term_title
 	my $out = '';
 	$out .= "\\033]0;$main\\007" if $CONFIG{term_set_title} & 1;
 	$out .= "\\033]1;$main\\007" if $CONFIG{term_set_title} & 2;
+	$out = "\\[$out\\]" if $out;
 	return $out;
 }
 
