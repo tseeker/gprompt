@@ -15,6 +15,10 @@ may be configured to display information from one of the generators. In
 addition, the script may be configured to generate a terminal title and/or
 terminal icon title.
 
+### Session example
+
+![Session example](screenshots/session.png)
+
 ### Themes
 
 #### Unthemed (but using custom layout):
@@ -33,12 +37,16 @@ terminal icon title.
 ![`blocks_gyr` theme](screenshots/theme-blocks_gyr.png)
 
 #### `powerline_yb` theme
+
+This theme requires a Powerline font.
+
 ![`powerline_yb` theme](screenshots/theme-powerline_yb.png)
-(requires a Powerline font)
 
 #### `powerline_gyr` theme
+
+This theme requires a Powerline font.
+
 ![`powerline_gyr` theme](screenshots/theme-powerline_gyr.png)
-(requires a Powerline font)
 
 ## Installing GPrompt
 
@@ -48,10 +56,10 @@ GPrompt may be installed either at the system level or on a per-user basis.
 
 * Copy the script and associated themes to your home directory.
 
-    mkdir -p ~/.local/share/gprompt/themes
-    cp gprompt.pl ~/.local/share/gprompt
-    chmod +x ~/.local/share/gprompt/gprompt.pl
-    cp themes/* ~/.local/share/gprompt/themes/
+      mkdir -p ~/.local/share/gprompt/themes
+      cp gprompt.pl ~/.local/share/gprompt
+      chmod +x ~/.local/share/gprompt/gprompt.pl
+      cp themes/* ~/.local/share/gprompt/themes/
 
 * Add the following line to your `~/.bashrc`:
 
@@ -62,10 +70,10 @@ GPrompt may be installed either at the system level or on a per-user basis.
 * In the case of a system-wide installation, the script and associated themes
   must be copied to some shared location, e.g.
 
-    mkdir -p /usr/share/gprompt/themes
-    cp gprompt.pl /usr/share/gprompt
-    chmod +x /usr/share/gprompt/gprompt.pl
-    cp themes/* /usr/share/gprompt/themes/
+      mkdir -p /usr/share/gprompt/themes
+      cp gprompt.pl /usr/share/gprompt
+      chmod +x /usr/share/gprompt/gprompt.pl
+      cp themes/* /usr/share/gprompt/themes/
 
 * Users may then use GPrompt by adding the following line to their `~/.bashrc`
   files (it could also be added to `/etc/skel/.bashrc` or `/etc/bash.bashrc`):
