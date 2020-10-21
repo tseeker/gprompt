@@ -1,6 +1,12 @@
 #!/usr/bin/perl
-# SHINY PERL PROMPT, lol
-# Use with : export PROMPT_COMMAND='eval "$(perl path/to/spp.pl $?)"'
+################################################################################
+# GADGETOPROMPT
+# A really useless bash prompt generator the most likely only works on Linux and
+# requires Perl.
+################################################################################
+
+# Have a look at README.md for some documentation
+# Licensed under the WTFPL version 2, which should be in the LICENSE file.
 
 use strict;
 use warnings;
@@ -18,9 +24,9 @@ our %CONFIG = (
 	# - Allow overrides from environment
 	cfg_from_env => 0 ,
 	# - System theme dirs
-	cfg_sys_themes => [ '/usr/share/spp/themes' ] ,
+	cfg_sys_themes => [ '/usr/share/gprompt/themes' ] ,
 	# - User theme dirs
-	cfg_user_themes => [ '.local/share/spp/themes' , '.spp-themes' ] ,
+	cfg_user_themes => [ '.local/share/gprompt/themes' , '.gprompt-themes' ] ,
 
 	# LAYOUT
 	# - Theme and local overrides
@@ -597,8 +603,8 @@ sub gen_term_title
 sub get_config_overrides
 {
 	foreach my $k ( keys %CONFIG ) {
-		next unless exists $ENV{ "SPP_" . uc($k) };
-		my $ev = $ENV{ "SPP_" . uc($k) };
+		next unless exists $ENV{ "GPROMPT_" . uc($k) };
+		my $ev = $ENV{ "GPROMPT_" . uc($k) };
 		next if $ev eq '';
 
 		my $vt = ref $CONFIG{ $k };
@@ -618,7 +624,11 @@ sub get_config_overrides
 
 sub load_config
 {
-	foreach my $cfg_file ( ( '/etc/spp-defaults.rc' , "$ENV{HOME}/.spp.rc" ) ) {
+	my @cfg_files = (
+		'/etc/gprompt-defaults.rc' ,
+		"$ENV{HOME}/.gprompt.rc"
+	);
+	foreach my $cfg_file ( @cfg_files ) {
 		next unless -f $cfg_file;
 		my $data = do $cfg_file;
 		my $warn = $CONFIG{cfg_warn_files};

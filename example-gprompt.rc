@@ -5,9 +5,9 @@
 	# - Allow overrides from environment
 	cfg_from_env => 0 ,
 	# - System theme dirs
-	cfg_sys_themes => [ '/usr/share/spp/themes' ] ,
+	cfg_sys_themes => [ '/usr/share/gprompt/themes' ] ,
 	# - User theme dirs
-	cfg_user_themes => [ '.local/share/spp/themes' , '.spp-themes' ] ,
+	cfg_user_themes => [ '.local/share/gprompt/themes' , '.gprompt-themes' ] ,
 
 	# LAYOUT
 	# - Theme and local overrides
