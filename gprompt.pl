@@ -79,7 +79,7 @@ our %CONFIG = (
 	# - Display status code? 0=no, 1=always, 2=on failure
 	pcmd_show_code => 2 ,
 	# - Pad status code display? 0 = no, -1 = left aligned, 1 = right aligned
-	pcmd_pad_code => -1 ,
+	pcmd_pad_code => 0 ,
 	# Success/failure colors for 0=nothing, 1=symbol, 2=code, 3=both
 	pcmd_colors => 1 ,
 
@@ -159,8 +159,8 @@ sub default_theme
 		'dt_bg' => -1 ,
 
 		# Previous command state - Symbols
-		'pcmd_ok_sym' => 'OK',
-		'pcmd_err_sym' => 'ERR',
+		'pcmd_ok_sym' => 'O',
+		'pcmd_err_sym' => 'X',
 		# Previous command state - OK text / background color
 		'pcmd_ok_fg' => -1 ,
 		'pcmd_ok_bg' => -1 ,
