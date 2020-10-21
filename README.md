@@ -15,6 +15,31 @@ may be configured to display information from one of the generators. In
 addition, the script may be configured to generate a terminal title and/or
 terminal icon title.
 
+### Themes
+
+#### Unthemed (but using custom layout):
+![Unthemed](screenshots/theme-unthemed.png)
+
+#### `ascii_yb` theme
+![`ascii_yb` theme](screenshots/theme-ascii_yb.png)
+
+#### `ascii_gyr` theme
+![`ascii_gyr` theme](screenshots/theme-ascii_gyr.png)
+
+#### `blocks_yb` theme
+![`blocks_yb` theme](screenshots/theme-blocks_yb.png)
+
+#### `blocks_gyr` theme
+![`blocks_gyr` theme](screenshots/theme-blocks_gyr.png)
+
+#### `powerline_yb` theme
+![`powerline_yb` theme](screenshots/theme-powerline_yb.png)
+(requires a Powerline font)
+
+#### `powerline_gyr` theme
+![`powerline_gyr` theme](screenshots/theme-powerline_gyr.png)
+(requires a Powerline font)
+
 ## Installing GPrompt
 
 GPrompt may be installed either at the system level or on a per-user basis.
