@@ -85,7 +85,7 @@ our %CONFIG = (
 
 	# LOAD AVERAGE
 	# - Minimal load average before the section is displayed
-	load_min => 13 ,
+	load_min => 0 ,
 
 	# GIT
 	# - Branches for which the prompt should emit a strong warning
