@@ -25,7 +25,8 @@ GPrompt may be installed either at the system level or on a per-user basis.
 
     mkdir -p ~/.local/share/gprompt/themes
     cp gprompt.pl ~/.local/share/gprompt
-    cp themes/* ~/.local/share/gprompt/themes
+    chmod +x ~/.local/share/gprompt/gprompt.pl
+    cp themes/* ~/.local/share/gprompt/themes/
 
 * Add the following line to your `~/.bashrc`:
 
@@ -37,7 +38,9 @@ GPrompt may be installed either at the system level or on a per-user basis.
   must be copied to some shared location, e.g.
 
     mkdir -p /usr/share/gprompt/themes
-    cp -R gprompt.pl themes/ /usr/share/gprompt
+    cp gprompt.pl /usr/share/gprompt
+    chmod +x /usr/share/gprompt/gprompt.pl
+    cp themes/* /usr/share/gprompt/themes/
 
 * Users may then use GPrompt by adding the following line to their `~/.bashrc`
   files (it could also be added to `/etc/skel/.bashrc`) :
