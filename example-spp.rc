@@ -1,0 +1,91 @@
+{
+	# CONFIGURATION
+	# - Issue warnings about configuration files
+	cfg_warn_files => 1 ,
+	# - Allow overrides from environment
+	cfg_from_env => 0 ,
+	# - System theme dirs
+	cfg_sys_themes => [ '/usr/share/spp/themes' ] ,
+	# - User theme dirs
+	cfg_user_themes => [ '.local/share/spp/themes' , '.spp-themes' ] ,
+
+	# LAYOUT
+	# - Theme and local overrides
+	layout_theme => 'blocks_yb' ,
+	layout_theme_overrides => {} ,
+	# - Section generators for the left side of the top bar
+	layout_left => [
+		'datetime' ,
+		'userhost' ,
+	] ,
+	# - Section generator for the central part of the top bar (undef if unused)
+	layout_middle => 'cwd' ,
+	# - Section generators for the right side of the top bar
+	layout_right => [
+		'pyenv' ,
+		'git' ,
+	] ,
+	# - Section generators for the input bar
+	layout_input => [
+		'load' ,
+		'prevcmd' ,
+	] ,
+	# - Always generate input line?
+	layout_input_always => 0 ,
+
+	# TERMINAL TITLE
+	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both
+	term_set_title => 1 ,
+	# - Generators to use
+	term_generators => [ 'userhost' , 'cwd' , 'pyenv' ] ,
+	# - Separator
+	term_separator => ' ::: ' ,
+
+	# CURRENT WORKING DIRECTORY
+	# - Max width as a percentage of the terminal's width
+	cwd_max_width => 50 ,
+
+	# USER@HOST
+	# - Display username? 0=no, 1=yes
+	uh_username => 1 ,
+	# - Display hostname? 0=no, 1=always, 2=remote only
+	uh_hostname => 2 ,
+	# - Display symbol for remote hosts?
+	uh_remote => 1 ,
+
+	# DATE/TIME
+	# - Display date?
+	dt_show_date => 0 ,
+	# - Display time?
+	dt_show_time => 1 ,
+	# - Date format
+	dt_date_fmt => '%Y-%m-%d' ,
+	# - Time format
+	dt_time_fmt => '%H:%M' ,
+
+	# PREVIOUS COMMAND STATE
+	# - Display OK/failed symbol?
+	pcmd_show_symbol => 1 ,
+	# - Display status code? 0=no, 1=always, 2=on failure
+	pcmd_show_code => 2 ,
+	# - Pad status code display? 0 = no, -1 = left aligned, 1 = right aligned
+	pcmd_pad_code => -1 ,
+	# Success/failure colors for 0=nothing, 1=symbol, 2=code, 3=both
+	pcmd_colors => 1 ,
+
+	# LOAD AVERAGE
+	# - Minimal load average before the section is displayed
+	load_min => 3 ,
+
+	# GIT
+	# - Branches for which the prompt should emit a strong warning
+	git_branch_danger => [ 'main' , 'master' ] ,
+	# - Branches for which the prompt should emit a weak warning
+	git_branch_warn => [ 'dev' , 'develop' ] ,
+	# - Warning mode for detached heads (0=none, 1=weak, 2=strong)
+	git_detached_warning => 2 ,
+	# - Show git status?
+	git_show_status => 1 ,
+	# - Show git stash count?
+	git_show_stash => 1 ,
+}
