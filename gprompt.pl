@@ -111,31 +111,31 @@ sub default_theme
 		# Extra colors for transition strings
 		'transition' => [ 7 ] ,
 		# Left side of top line
-		'bg_left' => 0,
-		'fg_left' => 7,
+		'bg_left' => -2,
+		'fg_left' => -2,
 		'left_prefix' => '' ,
 		'left_separator' => ' ' ,
 		'left_suffix' => '\f2 | ' ,
 		# Middle of top line
-		'bg_middle' => 0,
-		'fg_middle' => 7,
+		'bg_middle' => -2,
+		'fg_middle' => -2,
 		'middle_prefix' => ' ',
 		'middle_separator' => ' ',
 		'middle_suffix' => ' ',
 		# Right side of top line
-		'bg_right' => 0,
-		'fg_right' => 7,
+		'bg_right' => -2,
+		'fg_right' => -2,
 		'right_prefix' => '\f2 | ' ,
 		'right_separator' => ' ' ,
 		'right_suffix' => '' ,
 		# Input line
-		'bg_input' => 0,
-		'fg_input' => 7,
+		'bg_input' => -2,
+		'fg_input' => -2,
 		'input_prefix' => '' ,
 		'input_separator' => '\f2:' ,
 		'input_suffix' => '\f2 ; ' ,
 		# Secondary prompt
-		'bg_ps2' => 0,
+		'bg_ps2' => -2,
 		ps2_suffix => ' : ' ,
 
 		# Current working directory - Truncation string
@@ -236,6 +236,14 @@ our %TCCACHE = ();
 our %TLEN = ();
 our %SCACHE = ();
 our %THEME = ();
+our %STYLES = (
+	none	=> '' ,
+	b	    => 'bold' ,
+	u	    => 'smul' ,
+	i	    => 'sitm' ,
+	bu	    => 'bold,smul' ,
+	iu	    => 'sitm,smul' ,
+);
 
 # Terminal commands ---------------------------------------------------------{{{
 
@@ -259,6 +267,9 @@ sub set_color
 # Theming support -----------------------------------------------------------{{{
 
 sub thref($) { bless {r=>$_[0]}, 'ThemeRef'; }
+
+sub TERM_DEFAULT()    { -2 }
+sub SECTION_DEFAULT() { -1 }
 
 sub load_theme
 {
@@ -462,6 +473,20 @@ sub add_transitions
 	return @out;
 }
 
+sub apply_style
+{
+	my ( $bg , $fg , $style ) = @_;
+	my $out = tput_sequence( 'sgr0' );
+	$out .= set_color( 'b' , $bg ) unless $bg == -2;
+	$out .= set_color( 'f' , $fg ) unless $fg == -2;
+	if ( $style ne 'none' ) {
+		foreach my $ctrl ( split /,/, $STYLES{ $style } ) {
+			$out .= tput_sequence( $ctrl );
+		}
+	}
+	return $out;
+}
+
 sub render
 {
 	my $name = shift;
@@ -469,27 +494,53 @@ sub render
 	my $out = '';
 	my $mustSetFg = undef;
 	my $mustSetBg = undef;
+	my $mustSetStyle = undef;
 	my $bgDefault = themed( 'bg_' . $name );
 	my $fgDefault = themed( 'fg_' . $name );
+	my ( $fg , $bg , $style ) = ( -2 , -2 , 'none' );
 	foreach my $section ( @_ ) {
 		$mustSetBg = $section->{bg} if exists $section->{bg};
 		foreach my $part ( @{ $section->{content} } ) {
 			if ( ref $part ) {
 				$mustSetBg = $part->{bg} if exists $part->{bg};
 				$mustSetFg = $part->{fg} if exists $part->{fg};
+				$mustSetStyle = $part->{style} if exists $part->{style};
 			} else {
+				# Check background color changes
 				if ( defined $mustSetBg ) {
-					$mustSetBg = $bgDefault if $mustSetBg < 0;
-					$out .= set_color( 'b' , $mustSetBg );
+					$mustSetBg = $bgDefault if $mustSetBg == -1;
+					$mustSetBg = undef if $mustSetBg == $bg;
 				}
+				# Check foreground color changes
 				if ( defined $mustSetFg ) {
-					$mustSetFg = $fgDefault if $mustSetFg < 0;
-					$out .= set_color( 'f' , $mustSetFg );
+					$mustSetFg = $fgDefault if $mustSetFg == -1;
+					$mustSetFg = undef if $mustSetFg == $fg;
+				}
+				# Check style changes
+				if ( defined( $mustSetStyle ) && ( $mustSetStyle eq $style
+							|| !exists( $STYLES{ $style } ) ) ) {
+					$mustSetStyle = undef;
+				}
+				# Change style and colors if necessary
+				if ( defined( $mustSetBg ) || defined( $mustSetFg )
+						|| defined( $mustSetStyle ) ) {
+					if ( defined $mustSetBg ) {
+						$bg = $mustSetBg;
+						$mustSetBg = undef;
+					}
+					if ( defined $mustSetFg ) {
+						$fg = $mustSetFg;
+						$mustSetFg = undef;
+					}
+					if ( defined $mustSetStyle ) {
+						$style = $mustSetStyle;
+						$mustSetStyle = undef;
+					}
+					$out .= apply_style( $bg , $fg , $style );
 				}
 				$part =~ s/\\/\\\\/g;
 				$part =~ s/"/\\\"/g;
 				$out .= $part;
-				$mustSetBg = $mustSetFg = undef;
 			}
 		}
 	}
