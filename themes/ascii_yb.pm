@@ -4,15 +4,15 @@
 	'padding' => '-',
 
 	# Extra colors for transition strings
-	'transition' => [ 0 , 189 ] ,
+	'transition' => [ TERM_DEFAULT , 189 ] ,
 	# Default background/foreground colors
-	'bg' => 0,
+	'bg' => TERM_DEFAULT,
 	'fg' => 7,
 	# Color gradient used in various parts
-	fg0 => 69 ,  bg0 => -1 ,
-	fg1 => 117 , bg1 => -1 ,
-	fg2 => 178 , bg2 => -1 ,
-	fg3 => 226 , bg3 => -1 ,
+	fg0 => 69 ,  bg0 => SECTION_DEFAULT ,
+	fg1 => 117 , bg1 => SECTION_DEFAULT ,
+	fg2 => 178 , bg2 => SECTION_DEFAULT ,
+	fg3 => 226 , bg3 => SECTION_DEFAULT ,
 
 	# Left side of top line
 	'bg_left' => thref 'bg',
@@ -45,8 +45,8 @@
 	# Current working directory - Truncation string
 	cwd_trunc => '...' ,
 	# Current working directory - Foreground / background colors
-	'cwd_fg_color' => -1 ,
-	'cwd_bg_color' => -1 ,
+	'cwd_fg_color' => SECTION_DEFAULT ,
+	'cwd_bg_color' => SECTION_DEFAULT ,
 
 	# User@host - Remote host symbol
 	'uh_remote_symbol' => '(r)',
@@ -58,27 +58,27 @@
 	'uh_root_bg' => thref 'bg3' ,
 
 	# Date/time - Colors
-	'dt_time_fg' => -1 ,
-	'dt_date_fg' => -1 ,
-	'dt_bg' => -1 ,
+	'dt_time_fg' => SECTION_DEFAULT ,
+	'dt_date_fg' => SECTION_DEFAULT ,
+	'dt_bg' => SECTION_DEFAULT ,
 
 	# Previous command state - Symbols
 	'pcmd_ok_sym' => ':-)',
 	'pcmd_err_sym' => ':-(',
 	# Previous command state - OK text / background color
 	'pcmd_ok_fg' => thref 'fg0',
-	'pcmd_ok_bg' => -1 ,
+	'pcmd_ok_bg' => SECTION_DEFAULT ,
 	# Previous command state - Error text / background color
 	'pcmd_err_fg' => thref 'fg3',
-	'pcmd_err_bg' => -1 ,
+	'pcmd_err_bg' => SECTION_DEFAULT ,
 	# Previous command state - Other text foreground
-	'pcmd_text_fg' => -1 ,
+	'pcmd_text_fg' => SECTION_DEFAULT ,
 
 	# Load average - Symbol or text
 	'load_title' => 'ld',
 	# Load average - Low load colors
-	'load_low_fg' => -1,
-	'load_low_bg' => -1,
+	'load_low_fg' => SECTION_DEFAULT,
+	'load_low_bg' => SECTION_DEFAULT,
 	# Load average - Medium load colors
 	'load_med_fg' => thref 'fg2',
 	'load_med_bg' => thref 'bg2',
@@ -126,6 +126,6 @@
 	'git_stash_fg' => thref 'fg1' ,
 
 	# Python virtual environment section colors
-	'pyenv_fg' => -1,
-	'pyenv_bg' => -1,
+	'pyenv_fg' => SECTION_DEFAULT,
+	'pyenv_bg' => SECTION_DEFAULT,
 }

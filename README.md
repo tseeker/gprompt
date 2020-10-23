@@ -189,10 +189,24 @@ background color indices, while values between `2` and `9` will refer to the
 contents of the `transition` list.
 
 In addition to the entries above, theme definitions contain entries that are
-specific to the various generators. These entries are documented below. When
-the generator-specific entries list color indices, the special `-1` value may
-be used to indicate that the current area's foreground or background color
-should be used.
+specific to the various generators. These entries are documented below.
+
+A few special values can be used to simplify writing theme definitions.
+
+* The `thref` function may be used to copy values from other elements in the
+  current theme definition, for example:
+
+      bg_left   => 1 ,
+      bg_middle => 2 ,
+      bg_right  => thref 'bg_left' , # Left/right always use the same bg color
+
+* The `TERM_DEFAULT` value may be used for either background or foreground
+  color definitions. The terminal's default color will be used for the text in
+  question.
+
+* The `SECTION_DEFAULT` value may be used in generator-specific definitions to
+  indicate that the current section's foreground or background color should be
+  used.
 
 ## Generators
 
