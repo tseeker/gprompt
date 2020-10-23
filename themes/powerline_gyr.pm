@@ -44,8 +44,8 @@
 	# Current working directory - Truncation string
 	'cwd_trunc' => "\x{2026}",
 	# Current working directory - Foreground / background colors
-	'cwd_fg_color' => -1 ,
-	'cwd_bg_color' => -1 ,
+	'cwd_fg_color' => SECTION_DEFAULT ,
+	'cwd_bg_color' => SECTION_DEFAULT ,
 
 	# User@host - Remote host symbol
 	'uh_remote_symbol' => "\x{21a5}",
@@ -57,27 +57,27 @@
 	'uh_root_bg' => thref 'bg3' ,
 
 	# Date/time - Colors
-	'dt_time_fg' => -1 ,
-	'dt_date_fg' => -1 ,
-	'dt_bg' => -1 ,
+	'dt_time_fg' => SECTION_DEFAULT ,
+	'dt_date_fg' => SECTION_DEFAULT ,
+	'dt_bg' => SECTION_DEFAULT ,
 
 	# Previous command state - Symbols
 	'pcmd_ok_sym' => "\x{2713}",
 	'pcmd_err_sym' => "\x{2717}",
 	# Previous command state - OK text / background color
 	'pcmd_ok_fg' => 10 ,
-	'pcmd_ok_bg' => -1 ,
+	'pcmd_ok_bg' => SECTION_DEFAULT ,
 	# Previous command state - Error text / background color
 	'pcmd_err_fg' => 11 ,
 	'pcmd_err_bg' => 1 ,
 	# Previous command state - Other text foreground
-	'pcmd_text_fg' => -1 ,
+	'pcmd_text_fg' => SECTION_DEFAULT ,
 
 	# Load average - Symbol or text
 	'load_title' => "\x{219f}",
 	# Load average - Low load colors
-	'load_low_fg' => -1,
-	'load_low_bg' => -1,
+	'load_low_fg' => SECTION_DEFAULT,
+	'load_low_bg' => SECTION_DEFAULT,
 	# Load average - Medium load colors
 	'load_med_fg' => thref 'fg2',
 	'load_med_bg' => thref 'bg2',
@@ -125,6 +125,6 @@
 	'git_stash_fg' => thref 'fg1' ,
 
 	# Python virtual environment section colors
-	'pyenv_fg' => -1,
-	'pyenv_bg' => -1,
+	'pyenv_fg' => SECTION_DEFAULT,
+	'pyenv_bg' => SECTION_DEFAULT,
 }
