@@ -13,6 +13,7 @@ use warnings;
 use utf8;
 use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime);
+use Cwd;
 
 
 # DEFAULT CONFIGURATION ====================================================={{{
@@ -143,6 +144,9 @@ sub default_theme
 		# Current working directory - Foreground / background colors
 		'cwd_fg_color' => 12 ,
 		'cwd_bg_color' => -1 ,
+		# Current working directory - Colors when directory is missing
+		'cwd_missing_fg_color' => 1 ,
+		'cwd_missing_bg_color' => -1 ,
 
 		# User@host - Remote host symbol
 		'uh_remote_symbol' => '(r)',
@@ -231,6 +235,7 @@ sub default_theme
 # }}}
 # MAIN PROGRAM =============================================================={{{
 
+our $HASCWD;
 our $COLUMNS;
 our %TCCACHE = ();
 our %TLEN = ();
@@ -558,26 +563,26 @@ sub gen_top_line
 	return "" unless ( @left || @right || $midGen );
 
 	# Generate content
-	my ( @lm , @middle , @mr ) = ( );
+	my @middle = ( );
 	my $mc = themed 'bg_middle';
 	@left = gen_prompt_sections( 0 , @left );
 	if ( defined $midGen ) {
 		@middle = ( gen_prompt_section( $midGen ) );
 		if ( @middle ) {
-			@lm = (
-				gen_transition( themed('middle_prefix') , $mc , $mc ) ,
-				{ bg => themed('bg_middle') } ,
+			@middle = (
+				add_transitions( 'middle' , themed( 'bg_left' ) ,
+					themed( 'bg_right' ) , @middle )
 			);
-			@mr = gen_transition( themed('middle_suffix') , $mc , $mc );
 			foreach my $entry ( @middle ) {
 				delete $entry->{bg};
 			}
+			unshift @middle , { bg => themed('bg_middle') };
 		}
 	}
 	@right = gen_prompt_sections( 1 , @right );
 
 	# Adapt to width
-	my $len = get_length( ( @lm , @middle , @mr ) );
+	my $len = get_length( ( @middle ) );
 	@left = adapt_to_width( \$len , 'left' , @left );
 	@right = reverse adapt_to_width( \$len , 'right' , reverse @right );
 
@@ -591,7 +596,7 @@ sub gen_top_line
 
 	# Render
 	my $txt = render( 'left' , add_transitions( 'left' , 0 , $mc , @left ) );
-	$txt .= render( 'middle' , @lm , @middle , @mr , @mpad );
+	$txt .= render( 'middle' , @middle , @mpad );
 	$txt .= render( 'right' , add_transitions( 'right' , $mc , 0 , @right ) );
 	return $txt . tput_sequence( 'sgr0' ) . "\\n";
 }
@@ -702,6 +707,9 @@ sub load_config
 
 sub main
 {
+	$HASCWD = defined( getcwd );
+	chdir '/' unless $HASCWD;
+
 	load_config;
 	chop( $COLUMNS = `tput cols` );
 	%TLEN = compute_trans_lengths;
@@ -741,8 +749,28 @@ sub render_datetime
 
 sub render_cwd
 {
-	use Cwd;
+	my @out = ( );
 	my $cwd = getcwd;
+	my @cols;
+	unless ( $HASCWD ) {
+		@cols = map { themed $_ } qw(
+				cwd_missing_bg_color cwd_missing_fg_color );
+		push @out , {
+			bg => $cols[0] ,
+			content => [
+				{
+					fg => $cols[1] ,
+					style => 'i' ,
+				} ,
+				'(no cwd)'
+			] ,
+		};
+		return @out unless exists $ENV{PWD};
+		$cwd = $ENV{PWD};
+	} else {
+		@cols = map { themed $_ } qw( cwd_bg_color cwd_fg_color );
+		$cwd = getcwd;
+	}
 
 	( my $dir = $cwd ) =~ s!^.*/!!;
 	my $max_len = int( $COLUMNS * $CONFIG{cwd_max_width} / 100 );
@@ -756,10 +784,11 @@ sub render_cwd
 		$dir =~ s!^[^/]*/!$t/!;
 	}
 
-	return {
-		bg => themed 'cwd_bg_color' ,
-		content => [ {fg=>themed 'cwd_fg_color'} , $dir ]
+	push @out , {
+		bg => $cols[0] ,
+		content => [ {fg=>$cols[1]} , $dir ]
 	};
+	return @out;
 }
 
 # }}}
@@ -1048,6 +1077,7 @@ sub _render_git_stash
 sub render_git
 {
 	my @out = ( );
+	return @out unless $HASCWD;
 	system( 'git rev-parse --is-inside-work-tree >/dev/null 2>&1' );
 	return @out if $? != 0;
 	@out = ( @out , _render_git_branch , _render_git_repstate );

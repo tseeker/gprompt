@@ -24,7 +24,7 @@
 	'bg_middle' => thref 'bg',
 	'fg_middle' => 189,
 	'middle_prefix' => ' ',
-	'middle_separator' => ' | ',
+	'middle_separator' => "\\f2 \x{2551} ",
 	'middle_suffix' => ' ',
 	# Right side of top line
 	'bg_right' => thref 'bg',
@@ -47,6 +47,9 @@
 	# Current working directory - Foreground / background colors
 	'cwd_fg_color' => SECTION_DEFAULT ,
 	'cwd_bg_color' => SECTION_DEFAULT ,
+	# Current working directory - Colors when directory is missing
+	'cwd_missing_fg_color' => thref 'fg3' ,
+	'cwd_missing_bg_color' => thref 'bg3' ,
 
 	# User@host - Remote host symbol
 	'uh_remote_symbol' => "\x{21a5}",

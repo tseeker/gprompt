@@ -221,6 +221,9 @@ following theme entries are required:
   when it is too long compared to the terminal's width.
 * `cwd_fg_color` and `cwd_bg_color` are the foreground and background color
   indices for the section.
+* `cwd_missing_fg_color` and `cwd_missing_bg_color` are the foreground and
+  background color indices that will be used if the current directory is in
+  fact missing.
 
 ### Date/time
 
