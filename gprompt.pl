@@ -881,10 +881,13 @@ sub render_load
 		$cat = 'high';
 	}
 
-	$load = (themed 'load_title') . $load . '%';
 	return {
 		bg => themed( 'load_' . $cat . '_bg' ) ,
-		content => [ {fg=>themed( 'load_' . $cat . '_fg' )}, $load ]
+		content => [
+			{fg=>themed( 'load_' . $cat . '_fg' )},
+			(themed 'load_title') ,
+			{style=>'b'}, $load . '%' , {style=>'none'},
+		]
 	};
 }
 
