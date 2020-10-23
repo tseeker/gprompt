@@ -24,7 +24,7 @@
 	'bg_middle' => thref 'bg',
 	'fg_middle' => 189,
 	'middle_prefix' => ' ',
-	'middle_separator' => ' | ',
+	'middle_separator' => "\\f2 \x{2551} ",
 	'middle_suffix' => ' ',
 	# Right side of top line
 	'bg_right' => thref 'bg',

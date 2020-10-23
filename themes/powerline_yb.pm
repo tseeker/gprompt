@@ -23,7 +23,7 @@
 	'bg_middle' => 235,
 	'fg_middle' => thref 'fg',
 	'middle_prefix' => '',
-	'middle_separator' => ' | ',
+	'middle_separator' => "\\f2\x{2590}\x{258c}",
 	'middle_suffix' => '',
 	# Right side of top line
 	'bg_right' => 239,
