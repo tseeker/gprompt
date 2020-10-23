@@ -363,7 +363,7 @@ sub gen_transition
 	my @colors = ( @_ , @{ themed 'transition' } );
 	my $state = 0;
 	my $pc;
-	my $out = [ ];
+	my $out = [ {style=>'none'} ];
 	foreach my $char ( split // , $transition ) {
 		if ( $state == 1 ) {
 			if ( $char eq 'f' || $char eq 'b' ) {
