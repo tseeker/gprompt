@@ -363,7 +363,7 @@ sub gen_transition
 	my @colors = ( @_ , @{ themed 'transition' } );
 	my $state = 0;
 	my $pc;
-	my $out = [ ];
+	my $out = [ {style=>'none'} ];
 	foreach my $char ( split // , $transition ) {
 		if ( $state == 1 ) {
 			if ( $char eq 'f' || $char eq 'b' ) {
@@ -783,24 +783,25 @@ sub render_userhost
 		}
 	}
 
-	my $str = '';
+	my @out = ();
 	if ( $un ) {
-		$str .= getpwuid( $< ) || '(?)';
+		push @out , ( getpwuid( $< ) || '(?)' );
 	}
 	if ( $hn == 1 || ( $hn == 2 && $is_remote ) ) {
-		$str .= '@' if $str;
-		$str .= hostname;
+		push @out , '@' if @out;
+		push @out , hostname;
 	}
 	if ( $rm && $is_remote ) {
-		$str .= themed 'uh_remote_symbol';
+		push @out , {style => 'b'};
+		push @out , ( themed 'uh_remote_symbol' );
 	}
-	return () unless $str;
+	return () unless @out;
 
 	return {
 		bg => themed( ( $> == 0 ) ? 'uh_root_bg' : 'uh_user_bg' ) ,
 		content => [
 			{ fg => themed( ( $> == 0 ) ? 'uh_root_fg' : 'uh_user_fg' ) } ,
-			$str
+			@out
 		] ,
 	};
 }
@@ -820,8 +821,14 @@ sub render_prevcmd
 	my $col = themed( ( $status == 0 ) ? 'pcmd_ok_fg' : 'pcmd_err_fg' );
 	my @out = ();
 	if ( $ss ) {
-		push @out , { fg => ( ( $cl & 1 ) != 0 ) ? $col : -1 };
-		push @out , themed( $status == 0 ? 'pcmd_ok_sym' : 'pcmd_err_sym' );
+		@out = ( @out ,
+			{
+				fg => ( ( $cl & 1 ) != 0 ) ? $col : -1 ,
+				style => 'b'
+			} ,
+			themed( $status == 0 ? 'pcmd_ok_sym' : 'pcmd_err_sym' ) ,
+			{ style => 'none' } ,
+		);
 	}
 	if ( $sc ) {
 		push @out , ' ' if @out;
@@ -874,10 +881,13 @@ sub render_load
 		$cat = 'high';
 	}
 
-	$load = (themed 'load_title') . $load . '%';
 	return {
 		bg => themed( 'load_' . $cat . '_bg' ) ,
-		content => [ {fg=>themed( 'load_' . $cat . '_fg' )}, $load ]
+		content => [
+			{fg=>themed( 'load_' . $cat . '_fg' )},
+			(themed 'load_title') ,
+			{style=>'b'}, $load . '%' , {style=>'none'},
+		]
 	};
 }
 
@@ -909,7 +919,10 @@ sub _render_git_branch
 		bg => themed( 'git_branch_' . $branch_warning . '_bg' ) ,
 		content => [
 			{fg => themed( 'git_branch_' . $branch_warning . '_fg' )} ,
-			themed( 'git_branch_symbol' ) . $branch
+			themed( 'git_branch_symbol' ) ,
+			{style=>'b'},
+			$branch,
+			{style=>'none'},
 		]
 	};
 }
@@ -1002,7 +1015,9 @@ sub _render_git_status
 			content => [
 				{fg=>$fg[0]} ,
 				themed( 'git_' . $sec_name . '_symbol' ) ,
-				@subsecs
+				{style=>'b'},
+				@subsecs,
+				{style=>'none'},
 			]
 		};
 	}
@@ -1022,7 +1037,10 @@ sub _render_git_stash
 		bg => themed('git_stash_bg') ,
 		content => [
 			{fg=>themed('git_stash_fg')} ,
-			themed('git_stash_symbol') . $nl
+			themed('git_stash_symbol') ,
+			{style=>'b'},
+			$nl ,
+			{style=>'none'},
 		]
 	};
 }
@@ -1054,8 +1072,8 @@ sub render_pyenv
 	return {
 		bg => themed 'pyenv_bg' ,
 		content => [
-			{fg=>themed 'pyenv_fg'} ,
-			'PY:' . $env
+			{fg=>themed 'pyenv_fg'} , 'PY:' ,
+			{style=>'b'}, $env , {style=>'none'},
 		] ,
 	};
 }
