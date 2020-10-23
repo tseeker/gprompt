@@ -47,6 +47,9 @@
 	# Current working directory - Foreground / background colors
 	'cwd_fg_color' => SECTION_DEFAULT ,
 	'cwd_bg_color' => SECTION_DEFAULT ,
+	# Current working directory - Colors when directory is missing
+	'cwd_missing_fg_color' => thref 'fg3' ,
+	'cwd_missing_bg_color' => thref 'bg3' ,
 
 	# User@host - Remote host symbol
 	'uh_remote_symbol' => '(r)',
