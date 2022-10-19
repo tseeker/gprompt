@@ -158,6 +158,8 @@ sub default_theme
 		# User@host - Root - Foreground and background colors
 		'uh_root_fg' => 9 ,
 		'uh_root_bg' => -1 ,
+		# User@host - Hostname and remote host color
+		'uh_host_fg' => 10 ,
 
 		# Date/time - Colors
 		'dt_time_fg' => -1 ,
@@ -820,6 +822,7 @@ sub render_userhost
 		push @out , ( getpwuid( $< ) || '(?)' );
 	}
 	if ( $hn == 1 || ( $hn == 2 && $is_remote ) ) {
+		push @out , { fg => themed 'uh_host_fg' };
 		push @out , '@' if @out;
 		push @out , hostname;
 	}
