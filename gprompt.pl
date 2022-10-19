@@ -28,6 +28,8 @@ our %CONFIG = (
 	cfg_sys_themes => [ '/usr/share/gprompt/themes' ] ,
 	# - User theme dirs
 	cfg_user_themes => [ '.local/share/gprompt/themes' , '.gprompt-themes' ] ,
+	# - Use tput sgr0 for resets
+	cfg_sgr0_reset => 0 ,
 
 	# LAYOUT
 	# - Theme and local overrides
@@ -237,6 +239,7 @@ sub default_theme
 
 our $HASCWD;
 our $COLUMNS;
+our $RESET;
 our %TCCACHE = ();
 our %TLEN = ();
 our %SCACHE = ();
@@ -481,7 +484,7 @@ sub add_transitions
 sub apply_style
 {
 	my ( $bg , $fg , $style ) = @_;
-	my $out = tput_sequence( 'sgr0' );
+	my $out = $RESET;
 	$out .= set_color( 'b' , $bg ) unless $bg == -2;
 	$out .= set_color( 'f' , $fg ) unless $fg == -2;
 	if ( $style ne 'none' ) {
@@ -598,7 +601,7 @@ sub gen_top_line
 	my $txt = render( 'left' , add_transitions( 'left' , 0 , $mc , @left ) );
 	$txt .= render( 'middle' , @middle , @mpad );
 	$txt .= render( 'right' , add_transitions( 'right' , $mc , 0 , @right ) );
-	return $txt . tput_sequence( 'sgr0' ) . "\\n";
+	return $txt . $RESET . "\\n";
 }
 
 sub gen_input_line
@@ -610,8 +613,7 @@ sub gen_input_line
 			gen_prompt_sections( 0 , @input ) );
 	push @input , {content=>['']} unless @input;
 	return ( $len ,
-		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) )
-			 . tput_sequence( 'sgr0' )
+		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) ) . $RESET
 	);
 }
 
@@ -626,7 +628,7 @@ sub gen_ps2
 			content => [ ' ' x ( $ill - $len ) ]
 		};
 	}
-	return render( 'ps2' , @line ) . tput_sequence( 'sgr0' );
+	return render( 'ps2' , @line ) . $RESET;
 }
 
 sub gen_term_title
@@ -712,6 +714,7 @@ sub main
 
 	load_config;
 	chop( $COLUMNS = `tput cols` );
+	$RESET = $CONFIG{cfg_sgr0_reset} ? tput_sequence( 'sgr0' ) : "\033[0m";
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title;
 	my $ps1 = $pg . gen_top_line;
