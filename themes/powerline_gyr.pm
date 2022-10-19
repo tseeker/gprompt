@@ -58,6 +58,8 @@
 	# User@host - Root - Foreground and background colors
 	'uh_root_fg' => thref 'fg3' ,
 	'uh_root_bg' => thref 'bg3' ,
+	# User@host - Hostname foreground color
+	'uh_host_fg' => thref 'fg0',
 
 	# Date/time - Colors
 	'dt_time_fg' => SECTION_DEFAULT ,
