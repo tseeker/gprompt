@@ -717,6 +717,7 @@ sub main
 	load_config;
 	chop( $COLUMNS = `tput cols` );
 	$RESET = $CONFIG{cfg_sgr0_reset} ? tput_sequence( 'sgr0' ) : "\033[0m";
+	$RESET = '\\[' . $RESET . '\\]';
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title;
 	my $ps1 = $pg . gen_top_line;
