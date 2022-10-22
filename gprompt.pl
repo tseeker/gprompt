@@ -13,7 +13,7 @@ use warnings;
 use utf8;
 use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime);
-use Cwd;
+use Cwd qw(abs_path getcwd);
 
 
 # DEFAULT CONFIGURATION ====================================================={{{
@@ -713,8 +713,32 @@ sub load_config
 
 #}}}
 
+sub printBashInit
+{
+	my $gpPath = abs_path($0);
+	print <<"EOF";
+_gprompt_set_return() {
+	return "\${1:-0}"
+}
+gprompt_command() {
+	_GPROMPT_CMD_STATUS=\$?
+	eval "\$_GPROMPT_PREVIOUS_PCMD"
+	eval "\$( perl \Q$gpPath\E "\$_GPROMPT_CMD_STATUS" )"
+	_gprompt_set_return "\$_GPROMPT_CMD_STATUS"
+}
+shopt -s checkwinsize
+if [[ \$PROMPT_COMMAND != *"gprompt_command"* ]]; then
+	_GPROMPT_PREVIOUS_PCMD="\$PROMPT_COMMAND"
+	PROMPT_COMMAND="gprompt_command"
+fi
+EOF
+	exit 0;
+}
+
 sub main
 {
+	printBashInit if @ARGV && $ARGV[0] eq 'init';
+
 	$HASCWD = defined( getcwd );
 	chdir '/' unless $HASCWD;
 
