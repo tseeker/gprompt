@@ -101,6 +101,10 @@ our %CONFIG = (
 	git_show_status => 1 ,
 	# - Show git stash count?
 	git_show_stash => 1 ,
+
+	# PYTHON
+	# - Display Python version (0=no, 1=if venv is set, 2=always)
+	pyenv_py_version => 1 ,
 );
 
 # Default theme -------------------------------------------------------------{{{
@@ -231,6 +235,7 @@ sub default_theme
 
 		# Python virtual environment section colors
 		'pyenv_text' => 'PY:',
+		'pyenv_sep' => '/',
 		'pyenv_fg' => -1,
 		'pyenv_bg' => -1,
 	};
@@ -1131,23 +1136,34 @@ sub render_git
 
 sub render_pyenv
 {
-	return () unless $ENV{VIRTUAL_ENV} || $ENV{CONDA_DEFAULT_ENV};
+	my $vd = $CONFIG{pyenv_py_version};
 	my $env;
-	if ( $ENV{VIRTUAL_ENV} ) {
+	if ( exists $ENV{VIRTUAL_ENV} ) {
 		$env = $ENV{VIRTUAL_ENV};
-	} else {
+	} elsif (exists $ENV{CONDA_VIRTUAL_ENV}) {
 		$env = $ENV{CONDA_VIRTUAL_ENV};
+	} else {
+		$env = '';
 	}
 	$env =~ s!.*/!!;
+	return if !$env && $vd < 2;
+	my @output = (
+		{ fg=> themed 'pyenv_fg', style => 'd' },
+		(themed 'pyenv_text')
+	);
+	@output = (@output, { style => 'b' }, $env ) if $env;
+	@output = (@output, { style => 'd' }, (themed 'pyenv_sep')) if $env && $vd;
+	if ($vd == 2 || ( $vd == 1 && $env )) {
+		my $cmd = join('||',
+			(map { "python$_ --version 2>/dev/null" } ('', 3, 2))
+		);
+		chop( my $pyver = `$cmd` );
+		$pyver = (split /\s+/, $pyver, 2)[1];
+		@output = (@output, {style => 'none' }, $pyver);
+	}
 	return {
 		bg => themed 'pyenv_bg' ,
-		content => [
-			{fg=>themed 'pyenv_fg'} ,
-			(themed pyenv_text) ,
-			{style=>'b'},
-			$env ,
-			{style=>'none'},
-		] ,
+		content => [ @output ]
 	};
 }
 
