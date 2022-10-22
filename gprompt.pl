@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 ################################################################################
 # GADGETOPROMPT
-# A really useless bash prompt generator the most likely only works on Linux and
-# requires Perl.
+# A really useless bash prompt generator that most likely only works on Linux
+# and requires Perl.
 ################################################################################
 
 # Have a look at README.md for some documentation
