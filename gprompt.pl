@@ -45,6 +45,8 @@ our %CONFIG = (
 	layout_input => [ qw( userhost cwd ) ] ,
 	# - Always generate input line?
 	layout_input_always => 0 ,
+	# - Add an empty line before the prompt?
+	layout_empty_line => 0 ,
 
 	# TERMINAL TITLE
 	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both
@@ -790,7 +792,9 @@ sub main
 	$RESET = '\\[' . $RESET . '\\]';
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title;
-	my $ps1 = $pg . gen_top_line;
+	my $ps1 = $pg;
+	$ps1 .= "\\n" if $CONFIG{layout_empty_line};
+	$ps1 .= gen_top_line;
 	my ( $ill , $ilt ) = gen_input_line;
 	$ps1 .= $ilt;
 	my $ps2 = $pg . gen_ps2( $ill );

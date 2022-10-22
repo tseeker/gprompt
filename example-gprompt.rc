@@ -33,6 +33,8 @@
 	] ,
 	# - Always generate input line?
 	layout_input_always => 0 ,
+	# - Add an empty line before the prompt?
+	layout_empty_line => 0 ,
 
 	# TERMINAL TITLE
 	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both
