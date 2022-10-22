@@ -230,6 +230,7 @@ sub default_theme
 		'git_stash_fg' => -1 ,
 
 		# Python virtual environment section colors
+		'pyenv_text' => 'PY:',
 		'pyenv_fg' => -1,
 		'pyenv_bg' => -1,
 	};
@@ -1137,8 +1138,11 @@ sub render_pyenv
 	return {
 		bg => themed 'pyenv_bg' ,
 		content => [
-			{fg=>themed 'pyenv_fg'} , 'PY:' ,
-			{style=>'b'}, $env , {style=>'none'},
+			{fg=>themed 'pyenv_fg'} ,
+			(themed pyenv_text) ,
+			{style=>'b'},
+			$env ,
+			{style=>'none'},
 		] ,
 	};
 }
