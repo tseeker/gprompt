@@ -340,7 +340,11 @@ sub themed($)
 {
 	my $k = shift;
 	unless ( %THEME ) {
-		%THEME = ( %{ &load_theme } , %{ $CONFIG{layout_theme_overrides} } );
+		%THEME = (
+			%{ &default_theme } ,
+			%{ &load_theme } ,
+			%{ $CONFIG{layout_theme_overrides} }
+		);
 		my @to_resolve = grep { ref( $THEME{$_} ) eq 'ThemeRef' } keys %THEME;
 		foreach my $k ( @to_resolve ) {
 			theme_resolve( $k );
