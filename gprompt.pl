@@ -249,6 +249,7 @@ our %THEME = ();
 our %STYLES = (
 	none	=> '' ,
 	b	    => 'bold' ,
+	d	    => 'dim' ,
 	u	    => 'smul' ,
 	i	    => 'sitm' ,
 	bu	    => 'bold,smul' ,
@@ -826,7 +827,7 @@ sub render_userhost
 		push @out , ( getpwuid( $< ) || '(?)' );
 	}
 	if ( $hn == 1 || ( $hn == 2 && $is_remote ) ) {
-		push @out , { fg => themed 'uh_host_fg' };
+		push @out , { fg => themed 'uh_host_fg', style => 'd' };
 		push @out , '@' if @out;
 		push @out , hostname;
 	}
