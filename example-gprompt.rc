@@ -27,6 +27,7 @@
 	] ,
 	# - Section generators for the input bar
 	layout_input => [
+		'jobs' ,
 		'load' ,
 		'prevcmd' ,
 	] ,

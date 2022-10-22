@@ -284,6 +284,24 @@ The theme entries belowed control the Git information sections' appearance:
 * `git_stash_fg` and `git_stash_fg` define the background and foreground colors
   for the stash indicator.
 
+### Running jobs
+
+The `jobs` generator will output the amount of background jobs in the current
+shell. It is controlled by the following configuration variables:
+
+  * `jobs_always` controls whether the job count should be displayed even when
+    it is zero.
+
+The following theme entries control how the jobs section is displayed.
+
+  * `jobs_prefix` and `jobs_suffix` are the text of the prefix and suffix for
+    the job count.
+  * `jobs_bg` is the section's background color.
+  * `jobs_${element}_style` and `jobs_${element}_fg` control the style and
+    foreground color of the various parts of the section. `${element}` may be:
+    * `count` for the count itself,
+    * `prefix` or `suffix`.
+
 ### System load
 
 The `load` generator will output the system's load average for the past minute

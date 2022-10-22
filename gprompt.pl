@@ -86,6 +86,10 @@ our %CONFIG = (
 	# Success/failure colors for 0=nothing, 1=symbol, 2=code, 3=both
 	pcmd_colors => 1 ,
 
+	# JOBS
+	# - Always display?
+	jobs_always => 0 ,
+
 	# LOAD AVERAGE
 	# - Minimal load average before the section is displayed
 	load_min => 0 ,
@@ -181,6 +185,21 @@ sub default_theme
 		'pcmd_err_bg' => -1 ,
 		# Previous command state - Other text foreground
 		'pcmd_text_fg' => -1 ,
+
+		# Job count - Prefix and suffix text
+		'jobs_prefix' => '&' ,
+		'jobs_suffix' => '',
+		# Job count - Background color
+		'jobs_bg' => -1 ,
+		# Job count - Style and foreground color for the job count
+		'jobs_count_style' => 'b' ,
+		'jobs_count_fg' => -1 ,
+		# Job count - Style and foreground color for the prefix
+		'jobs_prefix_style' => '' ,
+		'jobs_prefix_fg' => -1 ,
+		# Job count - Style and foreground color for the suffix
+		'jobs_suffix_style' => '' ,
+		'jobs_suffix_fg' => -1 ,
 
 		# Load average - Symbol or text
 		'load_title' => 'ld',
@@ -730,8 +749,9 @@ _gprompt_set_return() {
 }
 gprompt_command() {
 	local cmd_status=\$?
+	local jobs=(\$(jobs -p))
 	eval "\$_GPROMPT_PREVIOUS_PCMD"
-	eval "\$( perl \Q$gpPath\E "rc:\$cmd_status" )"
+	eval "\$( perl \Q$gpPath\E "rc:\$cmd_status" "jobs:\${#jobs[@]}" )"
 	_gprompt_set_return "\$cmd_status"
 }
 shopt -s checkwinsize
@@ -975,6 +995,41 @@ sub render_load
 			(themed 'load_title') ,
 			{style=>'b'}, $load . '%' , {style=>'none'},
 		]
+	};
+}
+
+# }}}
+# Jobs ----------------------------------------------------------------------{{{
+
+sub _render_jobs_part
+{
+	my ($text, $themeName) = @_;
+	my $style = themed "jobs_${themeName}_style";
+	return (
+		{
+			style => $style ? $style : 'none' ,
+			fg => themed "jobs_${themeName}_fg" ,
+		},
+		$text
+	);
+}
+
+sub render_jobs
+{
+	return () unless exists $INPUT{jobs};
+	my $jobs = $INPUT{jobs};
+	return () if $jobs == 0 && !$CONFIG{jobs_always};
+
+	my @output = ();
+	my $section = themed 'jobs_prefix';
+	@output = _render_jobs_part($section, 'prefix') if $section;
+	@output = (@output, _render_jobs_part($jobs, 'count'));
+	$section = themed 'jobs_suffix';
+	@output = (@output, _render_jobs_part($section, 'prefix')) if $section;
+
+	return {
+		bg => themed( 'jobs_bg' ) ,
+		content => [ @output ]
 	};
 }
 

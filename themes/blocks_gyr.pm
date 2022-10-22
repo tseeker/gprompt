@@ -79,6 +79,15 @@
 	# Previous command state - Other text foreground
 	'pcmd_text_fg' => SECTION_DEFAULT ,
 
+	# Job count - Prefix and suffix text
+	'jobs_prefix' => "\x{2726}" ,
+	# Job count - Style and foreground color for the job count
+	'jobs_count_style' => '' ,
+	'jobs_count_fg' => 35 ,
+	# Job count - Style and foreground color for the prefix
+	'jobs_prefix_style' => 'd' ,
+	'jobs_prefix_fg' => 35 ,
+
 	# Load average - Symbol or text
 	'load_title' => "\x{219f}",
 	# Load average - Low load colors
