@@ -248,6 +248,7 @@ sub default_theme
 our $HASCWD;
 our $COLUMNS;
 our $RESET;
+our %INPUT = ();
 our %TCCACHE = ();
 our %TLEN = ();
 our %SCACHE = ();
@@ -728,10 +729,10 @@ _gprompt_set_return() {
 	return "\${1:-0}"
 }
 gprompt_command() {
-	_GPROMPT_CMD_STATUS=\$?
+	local cmd_status=\$?
 	eval "\$_GPROMPT_PREVIOUS_PCMD"
-	eval "\$( perl \Q$gpPath\E "\$_GPROMPT_CMD_STATUS" )"
-	_gprompt_set_return "\$_GPROMPT_CMD_STATUS"
+	eval "\$( perl \Q$gpPath\E "rc:\$cmd_status" )"
+	_gprompt_set_return "\$cmd_status"
 }
 shopt -s checkwinsize
 if [[ \$PROMPT_COMMAND != *"gprompt_command"* ]]; then
@@ -742,9 +743,23 @@ EOF
 	exit 0;
 }
 
+sub readArguments
+{
+	printBashInit if @ARGV == 1 && $ARGV[0] eq 'init';
+	if (@ARGV == 1 && $ARGV[0] =~ /^\d+$/) {
+		# Backward compatibility
+		$INPUT{rc} = $ARGV[0];
+	} else {
+		foreach my $arg (@ARGV) {
+			next unless $arg =~ /^([a-z]+):(.*)$/;
+			$INPUT{$1} = $2;
+		}
+	}
+}
+
 sub main
 {
-	printBashInit if @ARGV && $ARGV[0] eq 'init';
+	readArguments;
 
 	$HASCWD = defined( getcwd );
 	chdir '/' unless $HASCWD;
@@ -885,7 +900,8 @@ sub render_prevcmd
 	my ( $ss , $sc , $pc , $cl ) = map {
 			$CONFIG{ "pcmd_$_" }
 		} qw( show_symbol show_code pad_code colors );
-	my $status = scalar(@ARGV) ? $ARGV[0] : 255;
+	return () unless exists $INPUT{rc};
+	my $status = $INPUT{rc};
 	$sc = ( $sc == 1 || ( $sc == 2 && $status ) );
 	return () unless $sc || $ss;
 
