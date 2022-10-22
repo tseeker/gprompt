@@ -331,8 +331,20 @@ The following theme entries are needed:
 ### Python virtual environment
 
 The `pyenv` generator will output the name of the currently active Python
-virtual environment if there is one. The following theme entries are needed:
+virtual environment if there is one. It is controlled by the following
+configuration entry :
 
+* `pyenv_py_version` controls how the Python version is displayed; it can be
+  set to `0` (never display the Python version), `1` (display the Python
+  version if a virtual environment is active) or `2` (always display the
+  Python version).
+
+The following theme entries are needed:
+
+* `pyenv_text` contains the text that is displayed before the name of the
+  virtual environment and version.
+* `pyenv_sep` is the separator that is displayed between the virtual
+  environment's name and the Python version.
 * `pyenv_fg` and `pyenv_bg` define the foreground and background colors for the
   section.
 
@@ -355,3 +367,4 @@ In addition, the following entries must be set in the theme:
   to use for normal, unprivileged users.
 * `dt_root_fg` and `dt_root_bg` contain the foreground and background colors
   to use for the `root` account.
+* `uh_host_fg` contains the foreground color for the hostname.
