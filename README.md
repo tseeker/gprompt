@@ -142,8 +142,16 @@ The `layout_*` variables control the prompt's layout and general appearance:
   default this entry contains an empty string.
 * `layout_input_always` determines whether the input line should be rendered
   even if no generators are specified (`0` or `1`, default `0`).
-* `layout_empty_line` prints an empty line before the prompt's top line. This
-  prevents display problems when some command outputs a line without `\n`.
+* `layout_empty_line` determines how the prompt handles printing an empty line
+  before the prompt's top line.
+  * When set to `0`, no extra line is drawn, and commands that do not end with
+    an EOL will cause the prompt's first line to be displayed incorrectly.
+  * When set to `1`, the prompt's top line will always be preceeded with an
+    empty line.
+  * When set to `2`, the prompt will be preceeded by an empty line unless it
+    is being drawn on the terminal's first line.
+  * When set to `3`, a newline will be added to the prompt if the last
+    command's output didn't end with a newline.
 
 The `term_*` variables control the prompt's ability to change the terminal's
 title and/or icon title:

@@ -33,8 +33,9 @@
 	] ,
 	# - Always generate input line?
 	layout_input_always => 0 ,
-	# - Add an empty line before the prompt?
-	layout_empty_line => 0 ,
+	# - Add an empty line before the prompt? 0=no, 1=always, 2=not at the top
+	# of the terminal, 3=only if the previous command didn't finish with \n
+	layout_empty_line => 3 ,
 
 	# TERMINAL TITLE
 	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both

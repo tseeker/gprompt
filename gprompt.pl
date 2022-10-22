@@ -12,7 +12,7 @@ use strict;
 use warnings;
 use utf8;
 use open ':std', ':encoding(UTF-8)';
-use POSIX qw(strftime);
+use POSIX qw(strftime :termios_h);
 use Cwd qw(abs_path getcwd);
 
 
@@ -45,8 +45,9 @@ our %CONFIG = (
 	layout_input => [ qw( userhost cwd ) ] ,
 	# - Always generate input line?
 	layout_input_always => 0 ,
-	# - Add an empty line before the prompt?
-	layout_empty_line => 0 ,
+	# - Add an empty line before the prompt? 0=no, 1=always, 2=not at the top
+	# of the terminal, 3=only if the previous command didn't finish with \n
+	layout_empty_line => 3 ,
 
 	# TERMINAL TITLE
 	# - Set title from the prompt? 0=no, 1=normal, 2=minimized, 3=both
@@ -150,6 +151,13 @@ sub default_theme
 		# Secondary prompt
 		'bg_ps2' => -2,
 		ps2_suffix => ' : ' ,
+
+		# Text appended to a line without EOL when layout_empty_line is 3
+		'noeol_text' => '<NO EOL>' ,
+		# Colors and style for the above text
+		'noeol_fg' => 1 ,
+		'noeol_bg' => -1 ,
+		'noeol_style' => 'b' ,
 
 		# Current working directory - Truncation string
 		cwd_trunc => '...' ,
@@ -300,6 +308,51 @@ sub set_color
 {
 	my ( $type , $index ) = @_;
 	return tput_sequence( "seta$type $index" );
+}
+
+sub get_cursor_pos
+{
+	local $| = 1;
+	open(my $ttyIn, '<:bytes' , '/dev/tty');
+	open(my $ttyOut, '>:bytes' , '/dev/tty');
+
+	# Enable raw mode
+	my $term = POSIX::Termios->new;
+	my $ttyInFd = fileno $ttyIn;
+	$term->getattr($ttyInFd);
+	my $oTerm = $term ->getlflag;
+	$term->setlflag($oTerm & ~( ECHO | ECHOK | ICANON ));
+	$term->setcc(VTIME, 1);
+	$term->setattr($ttyInFd, TCSANOW);
+
+	# Read position
+	syswrite $ttyOut, "\033[6n", 4;
+	my ($input, $col, $line) = ("", "", "");
+	my $state = 0;
+	while (sysread $ttyIn, $input, 1) {
+		if ($state == 0) {
+			$state = 1 if $input eq '[';
+		} elsif ($state == 1) {
+			if ($input eq ';') {
+				$state = 2;
+			} else {
+				$line .= $input;
+			}
+		} elsif ($state == 2) {
+			last if $input eq 'R';
+			$col .= $input;
+		}
+	}
+
+	# Enable cooked mode
+	$term->setlflag($oTerm);
+	$term->setcc(VTIME, 0);
+	$term->setattr($ttyInFd, TCSANOW);
+
+	close $ttyIn;
+	close $ttyOut;
+
+	return $line, $col;
 }
 
 #}}}
@@ -593,6 +646,33 @@ sub render
 #}}}
 # Prompt parts --------------------------------------------------------------{{{
 
+sub gen_empty_line
+{
+	my $lel = $CONFIG{layout_empty_line};
+	my $nl;
+	my $out = "";
+	if ($lel > 1) {
+		my ($line, $col) = get_cursor_pos;
+		$nl = ( $lel == 2 && $line != 1 ) || ( $lel == 3 && $col != 1 );
+		if ( $lel == 3 && $col != 1 ) {
+			$out .= render('input', {
+				content => [
+					{
+						style => themed 'noeol_style' ,
+						fg => themed 'noeol_fg' ,
+						bg => themed 'noeol_bg' ,
+					},
+					( themed 'noeol_text' )
+				]
+			});
+		}
+	} else {
+		$nl = $lel
+	}
+	$out .= "\\n" if $nl;
+	return $out;
+}
+
 sub gen_top_line
 {
 	my @left = @{ $CONFIG{layout_left} };
@@ -750,17 +830,24 @@ _gprompt_set_return() {
 	return "\${1:-0}"
 }
 gprompt_command() {
-	local cmd_status=\$?
+	_GPROMPT_PREV_STATUS=\$?
 	local jobs=(\$(jobs -p))
 	eval "\$_GPROMPT_PREVIOUS_PCMD"
-	eval "\$( perl \Q$gpPath\E "rc:\$cmd_status" "jobs:\${#jobs[@]}" )"
-	_gprompt_set_return "\$cmd_status"
+	eval "\$( perl \Q$gpPath\E "rc:\$_GPROMPT_PREV_STATUS" "jobs:\${#jobs[@]}" )"
+	_gprompt_set_return "\$_GPROMPT_PREV_STATUS"
+}
+_gprompt_clear() {
+	clear -x
+	_gprompt_set_return "\${_GPROMPT_PREV_STATUS:-0}"
+	gprompt_command
+	echo -n "\${PS1\@P}\r"
 }
 shopt -s checkwinsize
 if [[ \$PROMPT_COMMAND != *"gprompt_command"* ]]; then
 	_GPROMPT_PREVIOUS_PCMD="\$PROMPT_COMMAND"
 	PROMPT_COMMAND="gprompt_command"
 fi
+bind -x \$'"\\C-l":_gprompt_clear'
 EOF
 	exit 0;
 }
@@ -793,7 +880,7 @@ sub main
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title;
 	my $ps1 = $pg;
-	$ps1 .= "\\n" if $CONFIG{layout_empty_line};
+	$ps1 .= gen_empty_line;
 	$ps1 .= gen_top_line;
 	my ( $ill , $ilt ) = gen_input_line;
 	$ps1 .= $ilt;

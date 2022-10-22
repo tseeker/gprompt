@@ -41,6 +41,13 @@
 	'bg_ps2' => 234,
 	'ps2_suffix' => '\f0\b2'."\x{e0b0}".'\f2\b1'."\x{e0b0}".' ' ,
 
+	# Text appended to a line without EOL when layout_empty_line is 3
+	'noeol_text' => "\x{e0b0} \x{26a0} \x{e0b2}" ,
+	# Colors and style for the above text
+	'noeol_fg' => thref 'fg3' ,
+	'noeol_bg' => thref 'bg3' ,
+	'noeol_style' => 'b' ,
+
 	# Current working directory - Truncation string
 	'cwd_trunc' => "\x{2026}",
 	# Current working directory - Foreground / background colors
