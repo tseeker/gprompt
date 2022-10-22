@@ -298,9 +298,6 @@ sub load_theme
 		( map { $ENV{HOME} . '/' . $_ } @{$CONFIG{cfg_user_themes}} ) ,
 		@{$CONFIG{cfg_sys_themes}}
 	);
-	if ($CONFIG{cfg_from_env} && exists $ENV{GPROMPT_THEME_DIR}) {
-		unshift @tdirs, $ENV{GPROMPT_THEME_DIR};
-	}
 	foreach my $dir ( @tdirs ) {
 		my $path = "$dir/${theme}.pm";
 		next unless -f $path;
