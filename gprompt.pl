@@ -515,23 +515,27 @@ sub compute_trans_lengths
 
 sub gen_prompt_section
 {
-	my $section = shift;
+	my ( $state , $section ) = @_;
+	unless ( exists $state->{ $section } ) {
+		no strict 'refs';
+		my $sFunc = 'readstate_' . $section;
+		$state->{ $section } = &$sFunc;
+	}
 	unless ( exists $SCACHE{ $section } ) {
 		no strict 'refs';
-		my $func = 'render_' . $section;
-		$SCACHE{ $section } = [ &$func ];
+		my $rFunc = 'render_' . $section;
+		$SCACHE{ $section } = [ &$rFunc( $state->{ $section } ) ];
 	}
 	return @{ $SCACHE{ $section } };
 }
 
 sub gen_prompt_sections
 {
-	my $reverse = shift;
-	my @input = @_;
+	my ( $state , $reverse , @input ) = @_;
 	@input = reverse @input if $reverse;
 	my @output = ( );
 	foreach my $section ( @input ) {
-		my @section = gen_prompt_section( $section );
+		my @section = gen_prompt_section( $state , $section );
 		@section = reverse @section if $reverse;
 		@output = ( @output , @section );
 	}
@@ -693,6 +697,7 @@ sub gen_empty_line
 
 sub gen_top_line
 {
+	my $state = shift;
 	my @left = @{ $CONFIG{layout_left} };
 	my @right = @{ $CONFIG{layout_right} };
 	my $midGen = $CONFIG{layout_middle};
@@ -701,9 +706,9 @@ sub gen_top_line
 	# Generate content
 	my @middle = ( );
 	my $mc = themed 'bg_middle';
-	@left = gen_prompt_sections( 0 , @left );
+	@left = gen_prompt_sections( $state , 0 , @left );
 	if ( defined $midGen ) {
-		@middle = ( gen_prompt_section( $midGen ) );
+		@middle = ( gen_prompt_section( $state , $midGen ) );
 		if ( @middle ) {
 			@middle = (
 				add_transitions( 'middle' , themed( 'bg_left' ) ,
@@ -715,7 +720,7 @@ sub gen_top_line
 			unshift @middle , { bg => themed('bg_middle') };
 		}
 	}
-	@right = gen_prompt_sections( 1 , @right );
+	@right = gen_prompt_sections( $state , 1 , @right );
 
 	# Adapt to width
 	my $len = get_length( ( @middle ) );
@@ -739,11 +744,12 @@ sub gen_top_line
 
 sub gen_input_line
 {
+	my $state = shift;
 	my @input = @{ $CONFIG{layout_input} };
 	return "" unless @input || $CONFIG{layout_input_always};
 	my $len = 0;
 	@input = adapt_to_width( \$len , 'input' ,
-			gen_prompt_sections( 0 , @input ) );
+			gen_prompt_sections( $state , 0 , @input ) );
 	push @input , {content=>['']} unless @input;
 	return ( $len ,
 		render( 'input' , add_transitions( 'input' , 0 , 0 , @input ) ) . $RESET
@@ -766,9 +772,10 @@ sub gen_ps2
 
 sub gen_term_title
 {
+	my $state = shift;
 	my @parts = @{ $CONFIG{term_generators} };
 	return '' unless @parts && $CONFIG{term_set_title};
-	@parts = gen_prompt_sections( 0 , @parts );
+	@parts = gen_prompt_sections( $state , 0 , @parts );
 	my @str_parts = ();
 	foreach my $part ( @parts ) {
 		my $cur = '';
@@ -896,11 +903,12 @@ sub main
 	$RESET = $CONFIG{cfg_sgr0_reset} ? tput_sequence( 'sgr0' ) : "\033[0m";
 	$RESET = '\\[' . $RESET . '\\]';
 	%TLEN = compute_trans_lengths;
-	my $pg = gen_term_title;
+	my $state = {};
+	my $pg = gen_term_title( $state );
 	my $ps1 = $pg;
-	$ps1 .= gen_empty_line;
-	$ps1 .= gen_top_line;
-	my ( $ill , $ilt ) = gen_input_line;
+	$ps1 .= gen_empty_line( $state );
+	$ps1 .= gen_top_line( $state );
+	my ( $ill , $ilt ) = gen_input_line( $state );
 	$ps1 .= $ilt;
 	my $ps2 = $pg . gen_ps2( $ill );
 	print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
@@ -913,9 +921,16 @@ main;
 
 # Date/time -----------------------------------------------------------------{{{
 
-sub render_datetime
+sub readstate_datetime
 {
 	my @cur_time = localtime time;
+	return { t => [@cur_time] };
+}
+
+sub render_datetime
+{
+	my $state = shift;
+	my @cur_time = @{ $state->{t} };
 	my @out = ( );
 	if ( $CONFIG{dt_show_date} ) {
 		push @out , {fg=>themed 'dt_date_fg'};
@@ -932,12 +947,24 @@ sub render_datetime
 #}}}
 # Current working directory -------------------------------------------------{{{
 
+sub readstate_cwd
+{
+	my $state = { exists=> $HASCWD };
+	$state->{home} = $ENV{HOME} if exists $ENV{HOME};
+	if ($HASCWD) {
+		$state->{cwd} = getcwd;
+	} elsif (exists $ENV{PWD}) {
+		$state->{cwd} = $ENV{PWD};
+	}
+	return $state;
+}
+
 sub render_cwd
 {
+	my $state = shift;
 	my @out = ( );
-	my $cwd = getcwd;
 	my @cols;
-	unless ( $HASCWD ) {
+	unless ( $state->{exists} ) {
 		@cols = map { themed $_ } qw(
 				cwd_missing_bg_color cwd_missing_fg_color );
 		push @out , {
@@ -950,18 +977,20 @@ sub render_cwd
 				'(no cwd)'
 			] ,
 		};
-		return @out unless exists $ENV{PWD};
-		$cwd = $ENV{PWD};
+		return @out unless exists $state->{cwd};
 	} else {
 		@cols = map { themed $_ } qw( cwd_bg_color cwd_fg_color );
-		$cwd = getcwd;
 	}
 
+	my $cwd = $state->{cwd};
 	( my $dir = $cwd ) =~ s!^.*/!!;
+	if (exists $state->{home}) {
+		my $home = $state->{home};
+		( $dir = $cwd ) =~ s!^\Q$home\E(\z|/.*)$!~$1!;
+	}
+
 	my $max_len = int( $COLUMNS * $CONFIG{cwd_max_width} / 100 );
 	$max_len = length( $dir ) if length( $dir ) > $max_len;
-
-	( $dir = $cwd ) =~ s!^$ENV{HOME}(\z|/.*)$!~$1!;
 	my $offset = length( $dir ) - $max_len;
 	if ( $offset > 0 ) {
 		$dir = substr $dir , $offset , $max_len;
@@ -979,34 +1008,42 @@ sub render_cwd
 # }}}
 # User/Host -----------------------------------------------------------------{{{
 
+sub readstate_userhost
+{
+	my $is_remote = 0;
+	foreach my $ev ( qw( SSH_CLIENT SSH2_CLIENT SSH_TTY ) ) {
+		if ( exists($ENV{$ev}) && $ENV{$ev} ne '' ) {
+			$is_remote = 1;
+			last;
+		}
+	}
+
+	use Sys::Hostname;
+	return {
+		rmt => $is_remote ,
+		user => ( getpwuid( $< ) || '(?)' ) ,
+		host => hostname
+	}
+}
+
 sub render_userhost
 {
-	use Sys::Hostname;
+	my $state = shift;
 	my ( $un , $hn , $rm ) = map {
 			$CONFIG{"uh_$_"}
 		} qw( username hostname remote );
 	return () unless $un || $hn || $rm;
 
-	my $is_remote = 0;
-	if ( $hn == 2 || $CONFIG{uh_remote} ) {
-		foreach my $ev ( qw( SSH_CLIENT SSH2_CLIENT SSH_TTY ) ) {
-			if ( exists($ENV{$ev}) && $ENV{$ev} ne '' ) {
-				$is_remote = 1;
-				last;
-			}
-		}
-	}
-
 	my @out = ();
 	if ( $un ) {
-		push @out , ( getpwuid( $< ) || '(?)' );
+		push @out , $state->{user};
 	}
-	if ( $hn == 1 || ( $hn == 2 && $is_remote ) ) {
+	if ( $hn == 1 || ( $hn == 2 && $state->{rmt} ) ) {
 		push @out , { fg => themed 'uh_host_fg', style => 'd' };
 		push @out , '@' if @out;
-		push @out , hostname;
+		push @out , $state->{host};
 	}
-	if ( $rm && $is_remote ) {
+	if ( $rm && $state->{rmt} ) {
 		push @out , {style => 'b'};
 		push @out , ( themed 'uh_remote_symbol' );
 	}
@@ -1024,13 +1061,19 @@ sub render_userhost
 # }}}
 # Previous command state ----------------------------------------------------{{{
 
+sub readstate_prevcmd
+{
+	return { rc => $INPUT{rc} };
+}
+
 sub render_prevcmd
 {
+	my $state = shift;
 	my ( $ss , $sc , $pc , $cl ) = map {
 			$CONFIG{ "pcmd_$_" }
 		} qw( show_symbol show_code pad_code colors );
-	return () unless exists $INPUT{rc};
-	my $status = $INPUT{rc};
+	return () unless exists $state->{rc};
+	my $status = $state->{rc};
 	$sc = ( $sc == 1 || ( $sc == 2 && $status ) );
 	return () unless $sc || $ss;
 
@@ -1068,7 +1111,7 @@ sub render_prevcmd
 # }}}
 # Load average --------------------------------------------------------------{{{
 
-sub render_load
+sub readstate_load
 {
 	my $ncpu;
 	if ( open( my $fh , '</proc/cpuinfo' ) ) {
@@ -1086,6 +1129,13 @@ sub render_load
 	close $fh;
 	$load =~ s/ .*$//;
 	$load = int( $load * 100 / $ncpu );
+
+	return $load;
+}
+
+sub render_load
+{
+	my $load = shift;
 	return () if $load < $CONFIG{load_min};
 
 	my $cat;
@@ -1110,6 +1160,11 @@ sub render_load
 # }}}
 # Jobs ----------------------------------------------------------------------{{{
 
+sub readstate_jobs
+{
+	return ( exists $INPUT{jobs} ) ? $INPUT{jobs} : -1;
+}
+
 sub _render_jobs_part
 {
 	my ($text, $themeName) = @_;
@@ -1125,9 +1180,8 @@ sub _render_jobs_part
 
 sub render_jobs
 {
-	return () unless exists $INPUT{jobs};
-	my $jobs = $INPUT{jobs};
-	return () if $jobs == 0 && !$CONFIG{jobs_always};
+	my $jobs = shift;
+	return () if ( $jobs == 0 && !$CONFIG{jobs_always} ) || $jobs < 0;
 
 	my @output = ();
 	my $section = themed 'jobs_prefix';
@@ -1145,75 +1199,50 @@ sub render_jobs
 # }}}
 # Git repository information ------------------------------------------------{{{
 
-sub _render_git_branch
+sub _readstate_git_branch
 {
-	# Get branch and associated warning level
 	chop( my $branch = `git symbolic-ref -q HEAD` );
 	my $detached = ( $? != 0 );
-	my $branch_warning;
 	if ( $detached ) {
 		chop( $branch = `git rev-parse --short -q HEAD` );
 		$branch = "($branch)";
-		$branch_warning = $CONFIG{git_detached_warning};
 	} else {
 		$branch =~ s!^refs/heads/!!;
-		my %branch_tab = (
-			( map { $_ => 1 } @{ $CONFIG{git_branch_warn} } ) ,
-			( map { $_ => 2 } @{ $CONFIG{git_branch_danger} } ) ,
-		);
-		#use Data::Dumper; print STDERR Dumper( \%branch_tab );
-		$branch_warning = exists( $branch_tab{ $branch } )
-				? $branch_tab{ $branch } : 0;
 	}
-	$branch_warning = qw(ok warn danger)[ $branch_warning ];
-	return {
-		bg => themed( 'git_branch_' . $branch_warning . '_bg' ) ,
-		content => [
-			{fg => themed( 'git_branch_' . $branch_warning . '_fg' )} ,
-			themed( 'git_branch_symbol' ) ,
-			{style=>'b'},
-			$branch,
-			{style=>'none'},
-		]
-	};
+	return { d => $detached, id => $branch };
 }
 
-sub _render_git_repstate
+sub _readstate_git_repstate
 {
-	return () unless open( my $fh ,
+	my $state = shift;
+	if ( open( my $fh ,
 			'git rev-parse --git-dir --is-inside-git-dir '
-			. '--is-bare-repository 2>/dev/null|' );
-	chop( my $gd = <$fh> );
-	chop( my $igd = <$fh> );
-	chop( my $bare = <$fh> );
+			. '--is-bare-repository 2>/dev/null|' ) ) {
+		chop( my $gd = <$fh> );
+		chop( my $igd = <$fh> );
+		chop( my $bare = <$fh> );
+		close $fh;
 
-	my $str = undef;
-	if ( $bare eq 'true' ) {
-		$str = 'bare';
-	} elsif ( $igd eq 'true' ) {
-		$str = 'in git dir';
-	} else {
-		if ( -f "$gd/MERGE_HEAD" ) {
-			$str = 'merge';
-		} elsif ( -d "$gd/rebase-apply" || -d "$gd/rebase-merge" ) {
-			$str = 'rebase';
-		} elsif ( -f "$gd/CHERRY_PICK_HEAD" ) {
-			$str = 'cherry-pick';
+		my $str = undef;
+		if ( $bare eq 'true' ) {
+			$str = 'bare';
+		} elsif ( $igd eq 'true' ) {
+			$str = 'in git dir';
+		} else {
+			if ( -f "$gd/MERGE_HEAD" ) {
+				$str = 'merge';
+			} elsif ( -d "$gd/rebase-apply" || -d "$gd/rebase-merge" ) {
+				$str = 'rebase';
+			} elsif ( -f "$gd/CHERRY_PICK_HEAD" ) {
+				$str = 'cherry-pick';
+			}
 		}
+		$state->{rs} = $str if $str;
 	}
-	return () unless defined $str;
-	return {
-		bg => themed 'git_repstate_bg' ,
-		content => [
-			{fg=>themed 'git_repstate_fg'},
-			$str
-		]
-	};
 }
 
-sub _render_git_status
+sub _readstate_git_status
 {
-	# Read status information
 	my %parts = (
 		'\?\?' => 0 ,
 		'.M' => 1 ,
@@ -1234,6 +1263,86 @@ sub _render_git_status
 		}
 		close $fh;
 	}
+	return [ @counters ];
+}
+
+sub readstate_git
+{
+	return undef unless $HASCWD;
+	system( 'git rev-parse --is-inside-work-tree >/dev/null 2>&1' );
+	return undef if $? != 0;
+	my $state = {};
+
+	# Branch information
+	$state->{br} = _readstate_git_branch;
+
+	# Repository state
+	_readstate_git_repstate( $state );
+
+	# Status
+	$state->{status} = _readstate_git_status if $CONFIG{git_show_status};
+
+	# Stash information
+	if ($CONFIG{git_show_stash}
+			&& open( my $fh , 'git stash list 2>/dev/null|' )) {
+		my @lines = grep { $_ =~ /^stash/ } <$fh>;
+		close( $fh );
+		my $nl = scalar( @lines );
+		$state->{stash} = $nl if $nl;
+	}
+
+	return $state;
+}
+
+sub _render_git_branch
+{
+	my $state = shift;
+
+	# Get branch and associated warning level
+	my $branch = $state->{id};
+	my $detached = $state->{d};
+	my $branch_warning;
+	if ( $detached ) {
+		$branch_warning = $CONFIG{git_detached_warning};
+	} else {
+		my %branch_tab = (
+			( map { $_ => 1 } @{ $CONFIG{git_branch_warn} } ) ,
+			( map { $_ => 2 } @{ $CONFIG{git_branch_danger} } ) ,
+		);
+		$branch_warning = exists( $branch_tab{ $branch } )
+				? $branch_tab{ $branch } : 0;
+	}
+	$branch_warning = qw(ok warn danger)[ $branch_warning ];
+	return {
+		bg => themed( 'git_branch_' . $branch_warning . '_bg' ) ,
+		content => [
+			{fg => themed( 'git_branch_' . $branch_warning . '_fg' )} ,
+			themed( 'git_branch_symbol' ) ,
+			{style=>'b'},
+			$branch,
+			{style=>'none'},
+		]
+	};
+}
+
+sub _render_git_repstate
+{
+	my $state = shift;
+	return () unless exists $state->{rs};
+	return {
+		bg => themed 'git_repstate_bg' ,
+		content => [
+			{fg=>themed 'git_repstate_fg'},
+			$state->{rs}
+		]
+	};
+}
+
+sub _render_git_status
+{
+	my $state = shift;
+	return () unless exists $state->{status};
+	my @counters = @{ $state->{status} };
 
 	# Generate status sections
 	my @sec_names = ( 'untracked' , 'indexed' );
@@ -1278,19 +1387,15 @@ sub _render_git_status
 
 sub _render_git_stash
 {
-	return () unless open( my $fh , 'git stash list 2>/dev/null|' );
-	my @lines = grep { $_ =~ /^stash/ } <$fh>;
-	close( $fh );
-
-	my $nl = scalar( @lines );
-	return () unless $nl;
+	my $state = shift;
+	return () unless exists $state->{stash};
 	return {
 		bg => themed('git_stash_bg') ,
 		content => [
 			{fg=>themed('git_stash_fg')} ,
 			themed('git_stash_symbol') ,
 			{style=>'b'},
-			$nl ,
+			$state->{stash} ,
 			{style=>'none'},
 		]
 	};
@@ -1298,32 +1403,47 @@ sub _render_git_stash
 
 sub render_git
 {
-	my @out = ( );
-	return @out unless $HASCWD;
-	system( 'git rev-parse --is-inside-work-tree >/dev/null 2>&1' );
-	return @out if $? != 0;
-	@out = ( @out , _render_git_branch , _render_git_repstate );
-	@out = ( @out , _render_git_status ) if $CONFIG{git_show_status};
-	@out = ( @out , _render_git_stash ) if $CONFIG{git_show_stash};
+	my $state = shift;
+	return () unless defined $state;
+	my @out = ( _render_git_branch( $state->{br} ) );
+	@out = ( @out , _render_git_repstate( $state ) );
+	@out = ( @out , _render_git_status( $state ) );
+	@out = ( @out , _render_git_stash( $state ) );
 	return @out;
 }
 
 # }}}
 # Python virtual environment ------------------------------------------------{{{
 
+sub readstate_pyenv
+{
+	my $state = {};
+	if ( exists $ENV{VIRTUAL_ENV} ) {
+		$state->{env} = $ENV{VIRTUAL_ENV};
+	} elsif (exists $ENV{CONDA_VIRTUAL_ENV}) {
+		$state->{env} = $ENV{CONDA_VIRTUAL_ENV};
+	}
+	$state->{env} =~ s!.*/!! if exists $state->{env};
+
+	my $vd = $CONFIG{pyenv_py_version};
+	if ( $vd == 2 || ( $vd == 1 && exists $state->{env} ) ) {
+		my $cmd = join('||',
+			(map { "python$_ --version 2>/dev/null" } ('', 3, 2))
+		);
+		chop( my $pyver = `$cmd` );
+		$state->{ver} = (split /\s+/, $pyver, 2)[1];
+	}
+
+	return $state;
+}
+
 sub render_pyenv
 {
+	my $state = shift;
 	my $vd = $CONFIG{pyenv_py_version};
-	my $env;
-	if ( exists $ENV{VIRTUAL_ENV} ) {
-		$env = $ENV{VIRTUAL_ENV};
-	} elsif (exists $ENV{CONDA_VIRTUAL_ENV}) {
-		$env = $ENV{CONDA_VIRTUAL_ENV};
-	} else {
-		$env = '';
-	}
-	$env =~ s!.*/!!;
-	return if !$env && $vd < 2;
+	my $env = exists( $state->{env} ) ? $state->{env} : '';
+	my $ver = exists( $state->{ver} ) ? $state->{ver} : '';
+	return unless $env || ( $vd == 2 && $ver );
 	my @output = (
 		{ fg=> themed 'pyenv_fg', style => 'd' },
 		(themed 'pyenv_text')
@@ -1331,12 +1451,7 @@ sub render_pyenv
 	@output = (@output, { style => 'b' }, $env ) if $env;
 	@output = (@output, { style => 'd' }, (themed 'pyenv_sep')) if $env && $vd;
 	if ($vd == 2 || ( $vd == 1 && $env )) {
-		my $cmd = join('||',
-			(map { "python$_ --version 2>/dev/null" } ('', 3, 2))
-		);
-		chop( my $pyver = `$cmd` );
-		$pyver = (split /\s+/, $pyver, 2)[1];
-		@output = (@output, {style => 'none' }, $pyver);
+		@output = (@output, {style => 'none' }, $ver);
 	}
 	return {
 		bg => themed 'pyenv_bg' ,
