@@ -670,7 +670,6 @@ sub gen_empty_line
 	my $nl;
 	my $out = "";
 	if ($lel > 1) {
-		sleep 1;
 		my ($line, $col) = get_cursor_pos;
 		$nl = ( $lel == 2 && $line != 1 ) || ( $lel == 3 && $col != 1 );
 		if ( $lel == 3 && $col != 1 ) {
