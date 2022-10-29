@@ -14,6 +14,7 @@ use utf8;
 use open ':std', ':encoding(UTF-8)';
 use POSIX qw(strftime :termios_h);
 use Cwd qw(abs_path getcwd);
+use Data::Dumper;
 
 
 # DEFAULT CONFIGURATION ====================================================={{{
@@ -863,9 +864,9 @@ gprompt_command() {
 }
 _gprompt_clear() {
 	clear -x
+	eval "\$( perl \Q$gpPath\E prevstate )"
+	echo -ne "\${PS1\@P}\\r"
 	_gprompt_set_return "\${_GPROMPT_PREV_STATUS:-0}"
-	gprompt_command
-	echo -n "\${PS1\@P}\r"
 }
 shopt -s checkwinsize
 if [[ \$PROMPT_COMMAND != *"gprompt_command"* ]]; then
@@ -880,20 +881,29 @@ EOF
 sub readArguments
 {
 	printBashInit if @ARGV == 1 && $ARGV[0] eq 'init';
+	my $state = {};
+
 	if (@ARGV == 1 && $ARGV[0] =~ /^\d+$/) {
 		# Backward compatibility
 		$INPUT{rc} = $ARGV[0];
 	} else {
+		if (@ARGV && $ARGV[0] eq 'prevstate') {
+			shift @ARGV;
+			$state = eval $ENV{GPROMPT_STATE};
+			$state = {} if $!;
+		}
 		foreach my $arg (@ARGV) {
 			next unless $arg =~ /^([a-z]+):(.*)$/;
 			$INPUT{$1} = $2;
 		}
 	}
+
+	return $state;
 }
 
 sub main
 {
-	readArguments;
+	my $state = readArguments;
 
 	$HASCWD = defined( getcwd );
 	chdir '/' unless $HASCWD;
@@ -903,7 +913,6 @@ sub main
 	$RESET = $CONFIG{cfg_sgr0_reset} ? tput_sequence( 'sgr0' ) : "\033[0m";
 	$RESET = '\\[' . $RESET . '\\]';
 	%TLEN = compute_trans_lengths;
-	my $state = {};
 	my $pg = gen_term_title( $state );
 	my $ps1 = $pg;
 	$ps1 .= gen_empty_line( $state );
@@ -911,7 +920,10 @@ sub main
 	my ( $ill , $ilt ) = gen_input_line( $state );
 	$ps1 .= $ilt;
 	my $ps2 = $pg . gen_ps2( $ill );
-	print "export PS1=\"$ps1\" PS2=\"$ps2\"\n";
+	$Data::Dumper::Terse = 1;
+	$Data::Dumper::Indent = 0;
+	$state = Dumper($state);
+	print "export PS1=\"$ps1\" PS2=\"$ps2\" GPROMPT_STATE=\Q$state\E\n";
 }
 
 main;
