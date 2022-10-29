@@ -310,6 +310,35 @@ sub set_color
 	return tput_sequence( "seta$type $index" );
 }
 
+sub flush_term_and_read_pos($)
+{
+	my $ttyIn = shift;
+	my ($input, $col, $line) = ("", "", "");
+	my @pending = ();
+	my $state = 0;
+	while (sysread $ttyIn, $input, 1) {
+		if ($state == 0) {
+			if ($input eq "\033") {
+				$state = 1;
+			} else {
+				push @pending, $input;
+			}
+		} elsif ($state == 1) {
+			$state = 2 if $input eq '[';
+		} elsif ($state == 2) {
+			if ($input eq ';') {
+				$state = 3;
+			} else {
+				$line .= $input;
+			}
+		} elsif ($state == 3) {
+			last if $input eq 'R';
+			$col .= $input;
+		}
+	}
+	return $col, $line, @pending;
+}
+
 sub get_cursor_pos
 {
 	local $| = 1;
@@ -327,23 +356,12 @@ sub get_cursor_pos
 
 	# Read position
 	syswrite $ttyOut, "\033[6n", 4;
-	my ($input, $col, $line) = ("", "", "");
-	my $state = 0;
-	while (sysread $ttyIn, $input, 1) {
-		if ($state == 0) {
-			$state = 1 if $input eq '[';
-		} elsif ($state == 1) {
-			if ($input eq ';') {
-				$state = 2;
-			} else {
-				$line .= $input;
-			}
-		} elsif ($state == 2) {
-			last if $input eq 'R';
-			$col .= $input;
-		}
-	}
+	my ($col, $line, @pending) = flush_term_and_read_pos $ttyIn;
 
+	# Restore input using TIOCSTI (0x5412)
+	foreach my $pByte (@pending) {
+		ioctl $ttyIn, 0x5412, $pByte;
+	}
 	# Enable cooked mode
 	$term->setlflag($oTerm);
 	$term->setcc(VTIME, 0);
@@ -652,6 +670,7 @@ sub gen_empty_line
 	my $nl;
 	my $out = "";
 	if ($lel > 1) {
+		sleep 1;
 		my ($line, $col) = get_cursor_pos;
 		$nl = ( $lel == 2 && $line != 1 ) || ( $lel == 3 && $col != 1 );
 		if ( $lel == 3 && $col != 1 ) {
