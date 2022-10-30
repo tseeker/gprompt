@@ -384,7 +384,7 @@ sub term_feed
 	my ($ttyIn, $ttyOut, $term) = @{ $_[0] };
 	shift;
 	foreach my $pByte (@_) {
-		ioctl $term->[0], 0x5412, $pByte;
+		ioctl $ttyIn, 0x5412, $pByte;
 	}
 }
 
