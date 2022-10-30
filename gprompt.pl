@@ -340,36 +340,66 @@ sub flush_term_and_read_pos($)
 	return $col, $line, @pending;
 }
 
-sub get_cursor_pos
+sub term_open
 {
-	local $| = 1;
 	open(my $ttyIn, '<:bytes' , '/dev/tty');
 	open(my $ttyOut, '>:bytes' , '/dev/tty');
-
-	# Enable raw mode
 	my $term = POSIX::Termios->new;
+	return [$ttyIn, $ttyOut, $term];
+}
+
+sub term_close
+{
+	my ($ttyIn, $ttyOut, $term) = @{ $_[0] };
+	close $ttyOut;
+	close $ttyIn;
+	@{ $_[0] } = ();
+}
+
+sub term_set_raw
+{
+	my ($ttyIn, $ttyOut, $term) = @{ $_[0] };
 	my $ttyInFd = fileno $ttyIn;
 	$term->getattr($ttyInFd);
-	my $oTerm = $term ->getlflag;
+	my $oTerm = $term->getlflag;
 	$term->setlflag($oTerm & ~( ECHO | ECHOK | ICANON ));
 	$term->setcc(VTIME, 1);
 	$term->setattr($ttyInFd, TCSANOW);
+	return $oTerm
+}
 
-	# Read position
-	syswrite $ttyOut, "\033[6n", 4;
-	my ($col, $line, @pending) = flush_term_and_read_pos $ttyIn;
-
-	# Restore input using TIOCSTI (0x5412)
-	foreach my $pByte (@pending) {
-		ioctl $ttyIn, 0x5412, $pByte;
-	}
-	# Enable cooked mode
+sub term_set_cooked
+{
+	my ($ttyIn, $ttyOut, $term) = @{ $_[0] };
+	my $oTerm = $_[1];
 	$term->setlflag($oTerm);
 	$term->setcc(VTIME, 0);
-	$term->setattr($ttyInFd, TCSANOW);
+	$term->setattr(fileno( $ttyIn ), TCSANOW);
+}
 
-	close $ttyIn;
-	close $ttyOut;
+# Fake input using TIOCSTI (0x5412)
+sub term_feed
+{
+	my ($ttyIn, $ttyOut, $term) = @{ $_[0] };
+	shift;
+	foreach my $pByte (@_) {
+		ioctl $term->[0], 0x5412, $pByte;
+	}
+}
+
+sub get_cursor_pos
+{
+	local $| = 1;
+	my $term = term_open;
+	my $oTerm = term_set_raw($term);
+
+	# Read position then restore input
+	syswrite $term->[1], "\033[6n", 4;
+	my ($col, $line, @pending) = flush_term_and_read_pos $term->[0];
+	term_feed $term, @pending;
+
+	term_set_cooked($term, $oTerm);
+	term_close($term);
 
 	return $line, $col;
 }
