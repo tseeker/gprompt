@@ -911,21 +911,22 @@ EOF
 
 sub readArguments
 {
-	printBashInit if @ARGV == 1 && $ARGV[0] eq 'init';
+	return {} unless @ARGV;
 	my $state = {};
 
-	if (@ARGV == 1 && $ARGV[0] =~ /^\d+$/) {
+	if ($ARGV[0] eq 'init') {
+		printBashInit;  # (will exit)
+	} elsif ($ARGV[0] =~ /^\d+$/) {
 		# Backward compatibility
 		$INPUT{rc} = $ARGV[0];
 	} else {
-		if (@ARGV && $ARGV[0] eq 'prevstate') {
-			shift @ARGV;
-			$state = eval $ENV{GPROMPT_STATE};
-			$state = {} if $!;
-		}
 		foreach my $arg (@ARGV) {
-			next unless $arg =~ /^([a-z]+):(.*)$/;
-			$INPUT{$1} = $2;
+			if ($arg eq 'prevstate') {
+				$state = eval $ENV{GPROMPT_STATE};
+				$state = {} if $!;
+			} elsif ($arg =~ /^([a-z]+):(.*)$/) {
+				$INPUT{$1} = $2;
+			}
 		}
 	}
 
