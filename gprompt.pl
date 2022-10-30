@@ -302,6 +302,7 @@ sub tput_sequence
 	open( my $fh , "tput $args|" );
 	my $value = <$fh>;
 	close( $fh );
+	$value =~ s/\033/\\033/g;
 	return ( $TCCACHE{ $args } = "\\[$value\\]" );
 }
 
