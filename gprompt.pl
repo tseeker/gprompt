@@ -390,7 +390,6 @@ sub term_feed
 
 sub get_cursor_pos
 {
-	local $| = 1;
 	my $term = term_open;
 	my $oTerm = term_set_raw($term);
 
@@ -899,12 +898,21 @@ _gprompt_clear() {
 	echo -ne "\${PS1\@P}\\r"
 	_gprompt_set_return "\${_GPROMPT_PREV_STATUS:-0}"
 }
+_gprompt_inject() {
+	perl -e 'ioctl(STDIN, 0x5412, pack("C", \$ARGV[0]))' \$1 </dev/tty
+}
+_gprompt_resize() {
+	eval "\$( perl \Q$gpPath\E prevstate resize )"
+	echo -ne "\\033[1F\\033[K\${PS1\@P}\\r"
+}
 shopt -s checkwinsize
 if [[ \$PROMPT_COMMAND != *"gprompt_command"* ]]; then
 	_GPROMPT_PREVIOUS_PCMD="\$PROMPT_COMMAND"
 	PROMPT_COMMAND="gprompt_command"
 fi
 bind -x \$'"\\C-l":_gprompt_clear'
+bind -x \$'"\\xff":_gprompt_resize'
+trap '_gprompt_inject 255; wait' SIGWINCH
 EOF
 	exit 0;
 }
@@ -913,6 +921,7 @@ sub readArguments
 {
 	return {} unless @ARGV;
 	my $state = {};
+	my $resize = 0;
 
 	if ($ARGV[0] eq 'init') {
 		printBashInit;  # (will exit)
@@ -924,29 +933,39 @@ sub readArguments
 			if ($arg eq 'prevstate') {
 				$state = eval $ENV{GPROMPT_STATE};
 				$state = {} if $!;
+			} elsif ($arg eq 'resize') {
+				$resize = 1;
 			} elsif ($arg =~ /^([a-z]+):(.*)$/) {
 				$INPUT{$1} = $2;
 			}
 		}
 	}
 
-	return $state;
+	return $state , $resize;
 }
 
 sub main
 {
-	my $state = readArguments;
+	my ( $state , $resize ) = readArguments;
 
 	$HASCWD = defined( getcwd );
 	chdir '/' unless $HASCWD;
 
 	load_config;
-	chop( $COLUMNS = `tput cols` );
+
+	( $COLUMNS , my $lines ) = split /\n/ , `tput cols lines`;
+	my ( $iCol, $iLine ) = ();
+	if ( $resize ) {
+		exit 0 unless ( @{ $CONFIG{layout_left} } || @{ $CONFIG{layout_right} }
+				|| $CONFIG{layout_middle} ) && exists( $ENV{READLINE_POINT} );
+		( $iLine, $iCol ) = get_cursor_pos;
+	}
+
 	$RESET = $CONFIG{cfg_sgr0_reset} ? tput_sequence( 'sgr0' ) : "\\[\\033[0m\\]";
 	%TLEN = compute_trans_lengths;
 	my $pg = gen_term_title( $state );
 	my $ps1 = $pg;
-	$ps1 .= gen_empty_line( $state );
+	$ps1 .= gen_empty_line( $state ) unless $resize;
 	$ps1 .= gen_top_line( $state );
 	my ( $ill , $ilt ) = gen_input_line( $state );
 	$ps1 .= $ilt;
@@ -955,6 +974,20 @@ sub main
 	$Data::Dumper::Indent = 0;
 	$state = Dumper($state);
 	print "export PS1=\"$ps1\" PS2=\"$ps2\" GPROMPT_STATE=\Q$state\E\n";
+	if ( $resize ) {
+		my $linePos = 1 + int( $ENV{READLINE_POINT} ) + $ill;
+		my $nExtraChars = $linePos % $COLUMNS;
+		my $nLines = ( $linePos - $nExtraChars ) / $COLUMNS;
+		$nLines ++ if $nExtraChars;
+		if ( $nLines < $lines ) {
+			my $toLine = $iLine - $nLines;
+			print "export _GPROMPT_SETPOS=\"\\033[${toLine};0H\"\n";
+			print "export _GPROMPT_RESTOREPOS=\"\\033[${iLine};${iCol}H\"\n";
+			open(my $f, ">>/tmp/debugthefuck");
+			print $f "linePos $linePos ill $ill nec $nExtraChars nLines $nLines iLine $iLine toLine $toLine iCol $iCol\n";
+			close($f);
+		}
+	}
 }
 
 main;
