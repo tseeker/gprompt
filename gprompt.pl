@@ -1060,13 +1060,13 @@ sub render_cwd
 
 	my $cwd = $state->{cwd};
 	( my $dir = $cwd ) =~ s!^.*/!!;
+	my $max_len = int( $COLUMNS * $CONFIG{cwd_max_width} / 100 );
+	$max_len = length( $dir ) if length( $dir ) > $max_len;
 	if (exists $state->{home}) {
 		my $home = $state->{home};
 		( $dir = $cwd ) =~ s!^\Q$home\E(\z|/.*)$!~$1!;
 	}
 
-	my $max_len = int( $COLUMNS * $CONFIG{cwd_max_width} / 100 );
-	$max_len = length( $dir ) if length( $dir ) > $max_len;
 	my $offset = length( $dir ) - $max_len;
 	if ( $offset > 0 ) {
 		$dir = substr $dir , $offset , $max_len;
